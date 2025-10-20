@@ -1,0 +1,7 @@
+model = "mistral:7b"
+system_message = """You are an assistant"""
+
+[ollama_instances]
+#format: "hostname:port" = GPU index
+"127.0.0.1:11432" = 0
+"127.0.0.1:11433" = 1

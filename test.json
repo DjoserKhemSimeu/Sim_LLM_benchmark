@@ -1,0 +1,19 @@
+{
+  "infra_name": "Mon_Infra_Calcul",
+  "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
+  "PUE": 1.5,
+  "gpus": {
+    "0": {
+      "nom": "NVIDIA A100",
+      "die_area": 826,
+      "tdp": 400,
+      "tech_node": "7",
+      "type_memoire": "HBM2e",
+      "taille_memoire": 40,
+      "foundry": "TSMC",
+      "date_sortie": "2020",
+      "fu": "Large scale"
+    }
+  }
+}
+
