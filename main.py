@@ -18,6 +18,7 @@ def main():
 
     # 1. Définir les variables d'environnement depuis le JSON
     for model in MODELS:
+        print(f"Running the Sim LLM benchmark with the model: {model} ")
         os.environ["BENCH_MODEL"] = model
 
         set_env_from_gpu_config(args.config)
