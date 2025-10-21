@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,6 +10,8 @@ from matplotlib.ticker import PercentFormatter
 
 # Constantes globales
 EGM = 79.1  # gCO2/kWh
+seven_years = 61320 * 3600
+
 
 # Récupérer les variables d'environnement
 def get_gpu_info_from_env():
@@ -21,13 +24,14 @@ def get_gpu_info_from_env():
             "name": os.environ.get(f"{prefix}_NAME"),
             "impact": float(os.environ.get(f"{prefix}_IMPACT", 0)),  # Impact de fabrication (kgCO2eq)
         }
+        print(os.environ.get(f"BENCH_GPU_0_IMPACT",123456))
+        print(PUE)
     return gpus, PUE
 
 # Charger les profils de consommation pour chaque modèle, GPU et nombre d'utilisateurs
 def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
     if models is None:
-        models = ["mistral:7b","gpt-oss:20b","gemma3:12b"]
-  # Remplacez par vos modèles réels
+        models = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
     power_profiles = {gpu_id: {model: {} for model in models} for gpu_id in gpus}
     for gpu_id in gpus:
         for model in models:
@@ -48,59 +52,120 @@ def compute_energy(power_profile):
     timestamps = power_profile["timestamp"]
     power = power_profile["gpu_power"]
     return np.trapz(power, timestamps) / 1000  # Conversion en kWh
+def compute_duration(power_profile):
+    timestamps = power_profile["timestamp"]
+    duration= timestamps[len(timestamps)-1] - timestamps[0]
+    return duration
+
 
 # Calculer l'impact environnemental (en mgCO2eq)
-def compute_impact(energy_kWh, impact_manufacturing_kg, gpu_name, PUE):
-    large_scale_gpus = ["A100", "H100", "L40S", "A40"]
-    if any(name in gpu_name for name in large_scale_gpus):
-        energy_kWh *= PUE
+def compute_impact(energy_kWh, impact_manufacturing_kg, gpu_name, PUE,duration):
+    energy_kWh *= PUE
     co2_emission = energy_kWh * EGM  # Émission CO2 due à l'énergie (gCO2eq)
-    total_impact = co2_emission + (impact_manufacturing_kg * 1000)  # Ajouter l'impact de fabrication (mgCO2eq)
-    return total_impact, co2_emission, impact_manufacturing_kg * 1000  # Retourne aussi les composantes
+    soft_manufacturing_kg = (duration/seven_years)*impact_manufacturing_kg
+    total_impact = co2_emission + (soft_manufacturing_kg * 1000)  # Ajouter l'impact de fabrication (mgCO2eq)
+    return total_impact, co2_emission, soft_manufacturing_kg * 1000
 
-# Tracer les profils de consommation pour chaque modèle
+# Tracer les profils de consommation pour chaque modèle et condition (nombre d'utilisateurs)
 def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=None):
-    for gpu_id, gpu in gpus.items():
-        for model in models:
-            for nb_user in user_counts:
+    for model in models:
+        for nb_user in user_counts:
+            fig, ax = plt.subplots(figsize=(10, 5))
+            for gpu_id, gpu in gpus.items():
                 if nb_user in power_profiles[gpu_id][model]:
-                    plt.figure(figsize=(10, 5))
-                    plt.plot(power_profiles[gpu_id][model][nb_user]["timestamp"],
-                             power_profiles[gpu_id][model][nb_user]["gpu_power"],
-                             label=f"{gpu['name']} ({nb_user} utilisateurs, {model})")
-                    plt.xlabel("Temps (s)")
-                    plt.ylabel("Puissance (W)")
-                    plt.title(f"Profil de consommation - {gpu['name']} ({model}, {nb_user} utilisateurs)")
-                    plt.legend()
-                    plt.grid(True)
-                    os.makedirs("images/power_profiles", exist_ok=True)
-                    plt.savefig(f"images/power_profiles/power_profile_{gpu['name']}_{model}_{nb_user}_users.png")
-                    plt.close()
+                    ax.plot(
+                        power_profiles[gpu_id][model][nb_user]["timestamp"],
+                        power_profiles[gpu_id][model][nb_user]["gpu_power"],
+                        label=f"{gpu['name']} (GPU {gpu_id})"
+                    )
+            ax.set_xlabel("Temps (s)")
+            ax.set_ylabel("Puissance (W)")
+            ax.set_title(f"Profil de consommation - {model} ({nb_user} utilisateurs)")
+            ax.legend()
+            ax.grid(True)
+            os.makedirs("images/power_profiles", exist_ok=True)
+            plt.savefig(f"images/power_profiles/power_profile_{model}_{nb_user}_users.png", bbox_inches="tight")
+            plt.close()
 
-# Tracer l'impact environnemental pour tous les modèles (un seul graphique)
+# Tracer l'impact environnemental pour chaque condition (nombre d'utilisateurs) séparément
 def plot_impact_bar(impacts, gpus, user_counts=[1, 10, 100], models=None):
-    plt.figure(figsize=(14, 8))
-    bar_width = 0.2
-    x = np.arange(len(user_counts))
+    if models is None:
+        models = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
 
-    # Créer une palette de couleurs pour les modèles
-    colors = sns.color_palette("husl", len(models))
+    # Définir une palette de couleurs pour les modèles
+    colors = sns.color_palette("husl", n_colors=len(models))
+    model_color_map = {model: colors[i] for i, model in enumerate(models)}
 
-    for model_idx, model in enumerate(models):
-        for gpu_idx, gpu_id in enumerate(gpus):
-            gpu_name = gpus[gpu_id]["name"]
-            impact_values = [impacts[gpu_name][model].get(nb_user, {"total": 0})["total"] for nb_user in user_counts]
-            offset = model_idx * len(gpus) * bar_width + gpu_idx * bar_width
-            plt.bar(x + offset, impact_values, width=bar_width, label=f"{gpu_name} ({model})", color=colors[model_idx])
+    # Préparer les positions des barres
+    n_models = len(models)
+    n_gpus = len(gpus)
+    n_user_counts = len(user_counts)
 
-    plt.xlabel("Nombre d'utilisateurs")
-    plt.ylabel("Impact environnemental (mgCO2eq)")
-    plt.title("Impact environnemental par modèle et nombre d'utilisateurs")
-    plt.xticks(x + (len(models) * len(gpus) * bar_width) / 2, [str(nb_user) for nb_user in user_counts])
-    plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
-    plt.grid(True)
+    # Largeur de chaque barre
+    bar_width = 0.5  # Réduire la largeur pour éviter le chevauchement
+
+    # Espacement entre les groupes de barres (par nombre d'utilisateurs)
+    group_spacing = 1.5  # Espace entre les groupes de barres
+
+    # Créer la figure
+    plt.figure(figsize=(16, 8))
+
+    # Pour chaque nombre d'utilisateurs
+    for user_idx, nb_user in enumerate(user_counts):
+        # Position de départ pour ce groupe
+        group_start = user_idx * (n_models * group_spacing)
+
+        # Pour chaque modèle
+        for model_idx, model in enumerate(models):
+            # Position de la barre pour ce modèle
+            x_pos = group_start + model_idx * group_spacing
+
+            # Pour chaque GPU
+            for gpu_idx, gpu_id in enumerate(gpus):
+                gpu_name = gpus[gpu_id]["name"]
+                impact_value = impacts[gpu_name][model].get(nb_user, {"total": 0})["total"]
+
+                # Position de la barre pour ce GPU
+                x = x_pos + gpu_idx * bar_width
+
+                # Tracer la barre
+                plt.bar(
+                    x,
+                    impact_value,
+                    width=bar_width,
+                    color=model_color_map[model],
+                    label=f"{model}" if gpu_idx == 0 else "",
+                    edgecolor="black",
+                    linewidth=0.5,
+                )
+        if user_idx < n_user_counts - 1:
+            separator_x = (group_start-1) + n_models * group_spacing - bar_width / 2
+            plt.axvline(x=separator_x + bar_width, color="gray", linestyle="--", linewidth=1.5)
+
+    # Personnaliser les ticks et les labels de l'axe des x
+    x_ticks = [
+        (user_idx * (n_models * group_spacing) + (n_models * group_spacing) / 2)-0.75
+        for user_idx in range(n_user_counts)
+    ]
+    x_labels = [f"{nb_user} utilisateur{'s' if nb_user > 1 else ''}" for nb_user in user_counts]
+
+    plt.xticks(x_ticks, x_labels, fontsize=12)
+    plt.xlabel("Nombre d'utilisateurs", fontsize=14)
+    plt.ylabel("Impact environnemental (mgCO2eq)", fontsize=14)
+    plt.title("Impact environnemental par modèle et nombre d'utilisateurs", fontsize=16, pad=20)
+
+    # Ajouter une légende unique par modèle
+    handles, labels = plt.gca().get_legend_handles_labels()
+    unique_labels = dict(zip(labels, handles))
+    plt.legend(unique_labels.values(), unique_labels.keys(), bbox_to_anchor=(1.05, 1), loc="upper left")
+
+    # Ajouter une grille et ajuster la mise en page
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
+    plt.tight_layout()
+
+    # Sauvegarder le graphique
     os.makedirs("images/impact_plots", exist_ok=True)
-    plt.savefig("images/impact_plots/impact_vs_users_all_models.png", bbox_inches="tight")
+    plt.savefig("images/impact_plots/impact_by_model_and_users.png", bbox_inches="tight", dpi=300)
     plt.close()
 
 # Tracer la proportion fabrication vs. utilisation pour chaque modèle
@@ -108,7 +173,6 @@ def plot_manufacturing_vs_usage(impacts, gpus, user_counts=[1, 10, 100], models=
     plt.figure(figsize=(14, 8))
     bar_width = 0.2
     x = np.arange(len(user_counts) * len(gpus) * len(models))
-
     for model_idx, model in enumerate(models):
         for gpu_idx, gpu_id in enumerate(gpus):
             gpu_name = gpus[gpu_id]["name"]
@@ -121,7 +185,6 @@ def plot_manufacturing_vs_usage(impacts, gpus, user_counts=[1, 10, 100], models=
                     plt.bar(idx, manufacturing / total * 100, width=bar_width, color='b', label="Fabrication" if idx == 0 else "")
                     plt.bar(idx, usage / total * 100, width=bar_width, bottom=manufacturing / total * 100, color='g', label="Utilisation" if idx == 0 else "")
                     plt.text(idx, 50, f"{nb_user}", ha='center', va='center')
-
     plt.xlabel("Modèle, GPU et nombre d'utilisateurs")
     plt.ylabel("Proportion (%)")
     plt.title("Proportion fabrication vs. utilisation par modèle")
@@ -136,36 +199,28 @@ def plot_manufacturing_vs_usage(impacts, gpus, user_counts=[1, 10, 100], models=
 
 # --- Exécution principale ---
 if __name__ == "__main__":
-    # Récupérer les infos des GPU et le PUE depuis les variables d'environnement
     gpus, PUE = get_gpu_info_from_env()
-    user_counts = [1, 10, 100]
-    models = ["mistral:7b","gpt-oss:20b","gemma3:12b"]
-  # Remplacez par vos modèles réels
+    user_counts = json.loads(os.environ.get("BENCH_USERS","[1,10,100]"))
 
-    # Charger les profils de consommation
+    models = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
     power_profiles = load_power_profiles(gpus, user_counts, models)
-
-    # Calculer l'impact environnemental pour chaque GPU, modèle et nombre d'utilisateurs
     impacts = {gpu["name"]: {model: {} for model in models} for gpu in gpus.values()}
     for gpu_id, gpu in gpus.items():
         for model in models:
             for nb_user in user_counts:
                 if nb_user in power_profiles[gpu_id][model]:
                     energy_kWh = compute_energy(power_profiles[gpu_id][model][nb_user])
-                    total_impact, usage_impact, manufacturing_impact = compute_impact(energy_kWh, gpu["impact"], gpu["name"], PUE)
+                    duration = compute_duration(power_profiles[gpu_id][model][nb_user])
+                    total_impact, usage_impact, manufacturing_impact = compute_impact(energy_kWh, gpu["impact"], gpu["name"], PUE, duration)
                     impacts[gpu["name"]][model][nb_user] = {
                         "total": total_impact,
                         "usage": usage_impact,
                         "manufacturing": manufacturing_impact
                     }
+                
                     print(f"Impact pour {gpu['name']} ({model}, {nb_user} utilisateurs): {total_impact:.2f} mgCO2eq")
-
-    # Tracer les profils de consommation pour chaque modèle
+    print(impacts)
     plot_power_profiles(power_profiles, gpus, user_counts, models)
-
-    # Tracer l'impact environnemental pour tous les modèles (un seul graphique)
     plot_impact_bar(impacts, gpus, user_counts, models)
-
-    # Tracer la proportion fabrication vs. utilisation pour chaque modèle
     plot_manufacturing_vs_usage(impacts, gpus, user_counts, models)
 

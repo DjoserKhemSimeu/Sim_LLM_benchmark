@@ -6,6 +6,7 @@ import os
 import signal
 import re
 from configs.config import set_env_from_gpu_config
+from measure.scripts.bar_impact import main_impact
 
 BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
 MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
@@ -79,24 +80,13 @@ def main():
         os.environ["BENCH_MODEL"] = model
         set_env_from_gpu_config(args.config)
 
-        # Exécution du script d'impact
-        process = subprocess.Popen(
-            [sys.executable, MANUFACTURING_IMPACT_SCRIPT],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1
-        )
-        for line in process.stdout:
-            print(line, end="")
-        return_code = process.wait()
-        if return_code != 0:
-            print("\n--- ERREUR D'EXÉCUTION (impact) ---")
-            stderr_output = process.stderr.read()
-            print("Backtrace :\n" + stderr_output)
-            sys.exit(1)
-
-        # Exécution du benchmark
+        
+        main_impact()
+        # Afficher toutes les variables d'environnement
+        for key, value in os.environ.items():
+            if key.startswith("BENCH_GPU_"):
+                print(f"{key}: {value}")
+                # Exécution du benchmark
         if not os.path.exists(BENCH_SCRIPT):
             print(f"Erreur : Le fichier {BENCH_SCRIPT} n'existe pas.")
             sys.exit(1)

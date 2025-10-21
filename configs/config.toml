@@ -1,4 +1,4 @@
-model = "gpt-oss:20b"
+model = "gemma3:12b"
 system_message = "You are an assistant"
 
 [ollama_instances]

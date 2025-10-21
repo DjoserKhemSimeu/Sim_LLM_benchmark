@@ -17,7 +17,7 @@ from utils.utils_file import log_message, run_back_bash_script
 import threading
 
 # --- CONFIGURABLES ---
-T = 10      # Durée du benchmark (en secondes)
+T = 2      # Durée du benchmark (en secondes)
 lamb = 1
 # Taux moyen d'arrivée (req/s)
 Max = 32     # Nb max de requêtes par utilisateur
@@ -50,7 +50,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
 
         try:
             start_req = time.time()
-            response = await client.chat(model=model, messages=[msg])
+            #response = await client.chat(model=model, messages=[msg])
+            time.sleep(0.5)#TEST
             elapsed = time.time() - start_req
             times.append(elapsed)
 
@@ -136,12 +137,12 @@ def plot_results(results, delta_t_data):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Asynchronous Ollama Benchmark")
     parser.add_argument("--config", type=str, default="configs/config.toml", help="Path to TOML config file")
-    parser.add_argument("--users", type=int, nargs="+", default=[1, 10, 100], help="List of concurrent user counts")
+    users_list= json.loads(os.environ.get("BENCH_USERS","[1,10,100]"))
 
     args = parser.parse_args()
 
     try:
-        results, delta_t = asyncio.run(benchmark(args.config, args.users))
+        results, delta_t = asyncio.run(benchmark(args.config, users_list))
         plot_results(results, delta_t)
         log_message("Benchmark terminé avec succès.")
     except KeyboardInterrupt:

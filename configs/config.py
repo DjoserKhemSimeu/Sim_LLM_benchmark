@@ -15,6 +15,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
     num_gpus = len(config["gpus"])
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
     os.environ["BENCH_PUE"] = str(config["PUE"])
+    os.environ["BENCH_USERS"]= json.dumps(config["Nb_users"])
     model = os.environ.get("BENCH_MODEL","mistral:7b")
     toml_config = {
         "model": model,
