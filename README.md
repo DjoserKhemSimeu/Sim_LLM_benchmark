@@ -27,8 +27,8 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
    Deploy selected LLMs (e.g., *Mistral 7B*, *GPT-OSS 20B*, *Gemma3 27B*) for inference benchmarking.
 
 3. **Measure environmental impact**  
-   - Compute the *design impact* of GPUs using  
-     `measure/scripts/barimpact.py`.  
+   - Compute the *manufacturing impact* of GPUs using  
+     `measure/scripts/bar_impact.py`.  
    - Run inference benchmarks for different numbers of concurrent users using  
      `scripts/multi_gpu_bench.py`.
 
