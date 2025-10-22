@@ -42,6 +42,9 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 
 - Python **3.8** or higher  
 - **Ollama** installed and configured  
+
+  curl -fsSL https://ollama.com/install.sh | sh
+
 - Required Python dependencies listed in `requirements.txt`
 
 To install the dependencies:

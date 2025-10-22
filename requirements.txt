@@ -1,2 +1,6 @@
 ollama
 tomli-w
+pandas
+seaborn
+scipy
+openpyxl
