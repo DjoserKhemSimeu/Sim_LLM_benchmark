@@ -27,6 +27,8 @@ measure_with_tegrastats() {
   local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}.csv"
   local OUTFILE="/tmp/tegrastats_out_${GPU_ID}.txt"
   local PID_FILE="$PID_DIR/nv_measure_gpu_${GPU_ID}.pid"
+  pkill -f "tegrastats" || true
+  rm -f "$OUTFILE"
 
   echo "timestamp,gpu_power" >"$LOG_FILE"
 
