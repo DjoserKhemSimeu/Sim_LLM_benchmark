@@ -6,6 +6,7 @@ FOUND=0
 # Tuer tous les processus de mesure, même sans fichier PID
 pkill -f "tegrastats --interval" || true
 pkill -f "nvidia-smi --query-gpu" || true
+pkill -f "script_start_tx" || true
 
 # Puis nettoyer les fichiers PID
 for PID_FILE in "$PID_DIR"/$PID_PATTERN; do

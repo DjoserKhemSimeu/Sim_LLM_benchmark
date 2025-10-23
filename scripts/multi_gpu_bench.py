@@ -49,8 +49,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
 
         try:
             start_req = time.time()
-            #response = await client.chat(model=model, messages=[msg])
-            time.sleep(0.5)#TEST
+            response = await client.chat(model=model, messages=[msg])
+            #time.sleep(0.5)#TEST
             elapsed = time.time() - start_req
             times.append(elapsed)
 
