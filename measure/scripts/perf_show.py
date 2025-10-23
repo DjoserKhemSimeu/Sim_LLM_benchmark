@@ -78,9 +78,9 @@ def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=N
                         power_profiles[gpu_id][model][nb_user]["gpu_power"],
                         label=f"{gpu['name']} (GPU {gpu_id})"
                     )
-            ax.set_xlabel("Temps (s)")
-            ax.set_ylabel("Puissance (W)")
-            ax.set_title(f"Profil de consommation - {model} ({nb_user} utilisateurs)")
+            ax.set_xlabel("Time (s)")
+            ax.set_ylabel("Power (W)")
+            ax.set_title(f"Power consumption profiles - {model} ({nb_user} users)")
             ax.legend()
             ax.grid(True)
             os.makedirs("images/power_profiles", exist_ok=True)
@@ -147,12 +147,12 @@ def plot_impact_bar(impacts, gpus, user_counts=[1, 10, 100], models=None):
         (user_idx * (n_models * group_spacing) + (n_models * group_spacing) / 2)-0.75
         for user_idx in range(n_user_counts)
     ]
-    x_labels = [f"{nb_user} utilisateur{'s' if nb_user > 1 else ''}" for nb_user in user_counts]
+    x_labels = [f"{nb_user} user{'s' if nb_user > 1 else ''}" for nb_user in user_counts]
 
     plt.xticks(x_ticks, x_labels, fontsize=12)
-    plt.xlabel("Nombre d'utilisateurs", fontsize=14)
-    plt.ylabel("Impact environnemental (mgCO2eq)", fontsize=14)
-    plt.title("Impact environnemental par modèle et nombre d'utilisateurs", fontsize=16, pad=20)
+    plt.xlabel("Number of users", fontsize=14)
+    plt.ylabel("Global warming potential (mgCO2eq)", fontsize=14)
+    plt.title("Global warming potential by model and by number of users", fontsize=16, pad=20)
 
     # Ajouter une légende unique par modèle
     handles, labels = plt.gca().get_legend_handles_labels()
@@ -185,9 +185,9 @@ def plot_manufacturing_vs_usage(impacts, gpus, user_counts=[1, 10, 100], models=
                     plt.bar(idx, manufacturing / total * 100, width=bar_width, color='b', label="Fabrication" if idx == 0 else "")
                     plt.bar(idx, usage / total * 100, width=bar_width, bottom=manufacturing / total * 100, color='g', label="Utilisation" if idx == 0 else "")
                     plt.text(idx, 50, f"{nb_user}", ha='center', va='center')
-    plt.xlabel("Modèle, GPU et nombre d'utilisateurs")
+    plt.xlabel("Model, GPU and number of users")
     plt.ylabel("Proportion (%)")
-    plt.title("Proportion fabrication vs. utilisation par modèle")
+    plt.title("Proportion manufacturing vs. use phase per model")
     xticks_labels = [f"{model}\n{gpus[gpu_id]['name']} ({nb_user})" for model in models for gpu_id in gpus for nb_user in user_counts]
     plt.xticks(x + bar_width / 2, xticks_labels, rotation=45, ha='right')
     plt.gca().yaxis.set_major_formatter(PercentFormatter())

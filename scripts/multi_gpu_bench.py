@@ -17,10 +17,9 @@ from utils.utils_file import log_message, run_back_bash_script
 import threading
 
 # --- CONFIGURABLES ---
-T = 2      # Durée du benchmark (en secondes)
-lamb = 1
-# Taux moyen d'arrivée (req/s)
-Max = 32     # Nb max de requêtes par utilisateur
+T = 1800      # Durée du benchmark (en secondes)
+lamb = 0.025 # Taux moyen d'arrivée (req/s)
+Max = 16     # Nb max de requêtes par utilisateur
 MODEL=os.environ.get("BENCH_MODEL","mistral:7b")
 print_lock = threading.Lock()
 df_prompts=pd.read_csv("data/prompts.csv")
@@ -50,8 +49,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
 
         try:
             start_req = time.time()
-            response = await client.chat(model=model, messages=[msg])
-            #time.sleep(0.5)#TEST
+            #response = await client.chat(model=model, messages=[msg])
+            time.sleep(0.5)#TEST
             elapsed = time.time() - start_req
             times.append(elapsed)
 
@@ -99,40 +98,60 @@ async def benchmark(config_path, users_list):
     return results, delta_t_data
 
 # --- VISUALISATION ---
-def plot_results(results, delta_t_data):
+def plot_latency_and_efficiency(results):
     users = sorted(results.keys())
     latencies = [results[u] for u in users]
-    avg_requests_per_user = [len(results[u]) / u for u in users]
+    avg_latencies = [np.mean(lats) for lats in latencies]
 
+    # Calcul de M = (lamb * nb_users) / latence_moyenne
+    M = [(lamb * u) / avg_latencies[i] for i, u in enumerate(users)]
+
+    # --- Enregistrement des données dans un fichier CSV ---
+    # Création d'un DataFrame pour les latences et M
+    data = {
+        "nb_users": users,
+        "avg_latency": avg_latencies,
+        "efficiency_M": M,
+    }
+
+
+    df = pd.DataFrame(data)
+
+    # Création du répertoire 'data' s'il n'existe pas
+    os.makedirs("./measure/data", exist_ok=True)
+
+    # Enregistrement du fichier CSV
+    csv_path = f"./measure/data/latency_efficiency_data_{MODEL}.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"Données enregistrées sous {csv_path}")
+
+    # --- Création des graphiques ---
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
-    bp = ax1.boxplot(latencies, positions=users, widths=0.6, patch_artist=True, showfliers=False)
-    ax1.set_xticks(users)
-    ax1.set_xlabel("Number of concurrent users")
-    ax1.set_ylabel("Latency per request (s)")
-    ax1.set_title(f"LLM Latency and Requests per User for {MODEL}")
+    # Graphique 1 : Boxplot de la latence
+    positions = np.arange(len(users))
+    bp = ax1.boxplot(latencies, positions=positions, widths=0.6, patch_artist=True, showfliers=False)
+    colors = plt.cm.viridis(np.linspace(0, 1, len(users)))
+    for patch, color in zip(bp['boxes'], colors):
+        patch.set_facecolor(color)
+    ax1.set_xticks(positions)
+    ax1.set_xticklabels(users)
+    ax1.set_xlabel("Number of concurrents users")
+    ax1.set_ylabel("latencies per queries")
+    ax1.set_title(f"Latency distribution{MODEL}")
     ax1.grid(axis='y', linestyle='--', alpha=0.7)
 
-    ax1b = ax1.twinx()
-    ax1b.plot(users, avg_requests_per_user, 'r-o', label='Avg requests per user')
-    ax1b.set_ylabel("Avg requests per user", color='tab:red')
-    ax1b.tick_params(axis='y', labelcolor='tab:red')
-    ax1b.yaxis.set_major_locator(MaxNLocator(integer=True))
-
-    colors = plt.cm.viridis(np.linspace(0, 1, len(users)))
-    for i, u in enumerate(users):
-        ax2.hist(delta_t_data[u], bins=30, alpha=0.5, density=True,
-                 label=f'{u} users', color=colors[i], edgecolor='black')
-    ax2.set_xlabel("Delta_t (s)")
-    ax2.set_ylabel("Density")
-    ax2.set_title("Distribution of delta_t per number of users")
+    # Graphique 2 : Efficacité (M)
+    ax2.plot(users, M, 'bo-', label='Efficacité (M)')
+    ax2.set_xlabel("Number of concurrents users")
+    ax2.set_ylabel("Efficacity (queries/s / latency)")
+    ax2.set_title(f"Model efficacity {MODEL} (λ = {lamb})")
+    ax2.grid(True, linestyle='--', alpha=0.7)
     ax2.legend()
-    ax2.grid(axis='y', linestyle='--', alpha=0.7)
 
     plt.tight_layout()
-    plt.savefig(f"./measure/data/results_bench_{MODEL}.png")
-    log_message("Graph saved to ./measure/data/results_bench.png")
-
+    plt.savefig(f"./measure/data/latency_efficiency_{MODEL}.png")
+    print(f"Graphiques enregistrés sous ./measure/data/latency_efficiency_{MODEL}.png")
 # --- MAIN ---
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Asynchronous Ollama Benchmark")
@@ -143,7 +162,7 @@ if __name__ == "__main__":
 
     try:
         results, delta_t = asyncio.run(benchmark(args.config, users_list))
-        plot_results(results, delta_t)
+        plot_latency_and_efficiency(results)
         log_message("Benchmark terminé avec succès.")
     except KeyboardInterrupt:
         log_message("Interrompu par l’utilisateur.")
