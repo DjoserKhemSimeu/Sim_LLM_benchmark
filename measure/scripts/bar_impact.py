@@ -16,7 +16,7 @@ def get_gpu_info_from_env():
             "name": os.environ.get(f"{prefix}_NAME"),
             "die_area": float(os.environ.get(f"{prefix}_DIE_AREA", 0)),
             "tdp": float(os.environ.get(f"{prefix}_TDP", 0)),
-            "tech_node": os.environ.get(f"{prefix}_TECH_NODE"),
+            "tech_node": float(os.environ.get(f"{prefix}_TECH_NODE")),
             "mem_type": os.environ.get(f"{prefix}_MEM_TYPE"),
             "mem_size": float(os.environ.get(f"{prefix}_MEM_SIZE", 0)),
             "foundry": os.environ.get(f"{prefix}_FOUNDRY"),

@@ -39,6 +39,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
 
   # Start server with nohup and log output
   nohup ollama serve >"$LOG_FILE" 2>&1 &
+  sleep 10
   ollama pull $MODEL
 
   if [[ $? -eq 0 ]]; then
