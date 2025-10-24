@@ -44,7 +44,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
 
 
 
-    run_front_bash_script("scripts/ollama-batch-servers.sh","1",model)#os.environ["BENCH_NUM_GPU"])
+    run_front_bash_script("scripts/ollama-batch-servers.sh",os.environ["BENCH_NUM_GPU"],model)
     print(f"Variables d'environnement définies pour {num_gpus} GPU(s).")
 
 def main():
