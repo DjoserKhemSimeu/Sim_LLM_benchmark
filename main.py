@@ -12,7 +12,7 @@ BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
 MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
 MODELS = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
-
+os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + os.pathsep + "."
 def detecter_ports_ollama():
     """Détecte les ports utilisés par Ollama."""
     try:
