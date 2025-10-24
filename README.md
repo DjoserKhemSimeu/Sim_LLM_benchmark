@@ -42,9 +42,18 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 
 - Python **3.8** or higher  
 - **Ollama** installed and configured  
+```bash
+ curl -fsSL https://ollama.com/install.sh | sh
 
-  curl -fsSL https://ollama.com/install.sh | sh
+```
+- Create a python 
+  ```bash
+   apt install python3-venv
+  python3 -m venv ~/ollama
+  source ~/ollama/bin/activate
 
+  ```
+  ```
 - Required Python dependencies listed in `requirements.txt`
 
 To install the dependencies:
@@ -53,6 +62,10 @@ To install the dependencies:
 pip install -r requirements.txt
 ```
 
+- Define the location of Ollama models 
+```bash
+export OLLAMA_MODELS=/tmp/ollama
+```
 ---
 
 ## 🚀 Usage
