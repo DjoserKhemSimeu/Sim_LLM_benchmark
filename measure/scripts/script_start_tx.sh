@@ -85,7 +85,9 @@ measure_with_nvidia_smi() {
 for GPU_ID in $(seq 0 $((NUM_GPUS - 1))); do
   if $TEGRASTATS_INSTALLED; then
     measure_with_tegrastats "$GPU_ID"
+    export BENCH_JETSON=1
   else
+    export BENCH_JETSON=0
     measure_with_nvidia_smi "$GPU_ID"
   fi
 done
