@@ -47,7 +47,11 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
 def compute_energy(power_profile):
     timestamps = power_profile["timestamp"]
     power = power_profile["gpu_power"]
-    return np.trapz(power, timestamps) / 1000  # kWh
+    mask = np.isfinite(power)
+    power=power[mask]
+    timestamps=timestamps[mask]
+    print(f"Trapz : {np.trapz(power, timestamps)}")
+    return np.trapz(power, timestamps) / 3_600_000  # kWh
 
 
 def compute_duration(power_profile):
@@ -59,9 +63,30 @@ def compute_impact(energy_kWh, impact_manufacturing_kg, PUE, duration):
     energy_kWh *= PUE
     co2_usage = energy_kWh * EGM  # gCO2eq
     soft_manufacturing_kg = (duration / seven_years) * impact_manufacturing_kg
-    total_impact = co2_usage + (soft_manufacturing_kg * 1000)  # mgCO2eq
+    total_impact = co2_usage + (soft_manufacturing_kg * 1000)  # gCO2eq
+    print(total_impact)
     return total_impact, co2_usage, soft_manufacturing_kg * 1000
 
+def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=None):
+
+    for model in models:
+        for nb_user in user_counts:
+            fig, ax = plt.subplots(figsize=(10, 5))
+            for gpu_id, gpu in gpus.items():
+                if nb_user in power_profiles[gpu_id][model]:
+                    ax.plot(
+                        power_profiles[gpu_id][model][nb_user]["timestamp"],
+                        power_profiles[gpu_id][model][nb_user]["gpu_power"],
+                        label=f"{gpu['name']} (GPU {gpu_id})"
+                    )
+            ax.set_xlabel("Time (s)")
+            ax.set_ylabel("Power (W)")
+            ax.set_title(f"Power consumption profiles - {model} ({nb_user} users)")
+            ax.legend()
+            ax.grid(True)
+            os.makedirs("images/power_profiles", exist_ok=True)
+            plt.savefig(f"images/power_profiles/power_profile_{model}_{nb_user}_users.png", bbox_inches="tight")
+            plt.close()
 
 # --- Agrégation des impacts globaux ---
 def aggregate_global_impacts(impacts, models, user_counts):
@@ -85,6 +110,7 @@ def aggregate_global_impacts(impacts, models, user_counts):
                 "usage": usage,
                 "manufacturing": manufacturing,
             }
+    print(global_impacts)
     return global_impacts
 
 
@@ -113,6 +139,9 @@ def plot_impact_bar_global(global_impacts, user_counts=[1, 10, 100], models=None
                 edgecolor="black",
                 label=f"{model}" if user_idx == 0 else "",
             )
+        if user_idx < len(user_counts) - 1:
+            separator_x = (group_start-1) + len(models) * group_spacing - bar_width / 2
+            plt.axvline(x=separator_x + bar_width, color="gray", linestyle="--", linewidth=1.5)
 
     x_ticks = [
         user_idx * (len(models) * group_spacing) + (len(models) * group_spacing) / 2 - 0.5
@@ -122,7 +151,7 @@ def plot_impact_bar_global(global_impacts, user_counts=[1, 10, 100], models=None
 
     plt.xticks(x_ticks, x_labels)
     plt.xlabel("Number of users")
-    plt.ylabel("Global warming potential (mgCO2eq)")
+    plt.ylabel("Global warming potential (gCO2eq)")
     plt.title("Global impact (all GPUs combined)")
     plt.grid(axis="y", linestyle="--", alpha=0.7)
     plt.legend(title="Model", bbox_to_anchor=(1.05, 1), loc="upper left")
@@ -151,7 +180,7 @@ def plot_manufacturing_vs_usage_global(global_impacts, user_counts=[1, 10, 100],
             total = manufacturing + usage
             plt.bar(idx, manufacturing / total * 100, width=bar_width, color="b", label="Manufacturing" if idx == 0 else "")
             plt.bar(idx, usage / total * 100, width=bar_width, bottom=manufacturing / total * 100, color="g", label="Usage" if idx == 0 else "")
-            plt.text(idx, 50, f"{nb_user}", ha="center", va="center", fontsize=9)
+        
 
     xticks_labels = [f"{model}\n({nb_user} users)" for model in models for nb_user in user_counts]
     plt.xticks(positions, xticks_labels, rotation=45, ha="right")
@@ -181,8 +210,12 @@ if __name__ == "__main__":
         for model in models:
             for nb_user in user_counts:
                 if nb_user in power_profiles[gpu_id][model]:
+                    print(f"{gpu_id}:{model}:{nb_user}")
                     energy_kWh = compute_energy(power_profiles[gpu_id][model][nb_user])
+                    print(f"Energy: {energy_kWh}")
                     duration = compute_duration(power_profiles[gpu_id][model][nb_user])
+
+                    print(f"Duration: {duration}")
                     total, usage, manufacturing = compute_impact(energy_kWh, gpu["impact"], PUE, duration)
                     impacts[gpu["name"]][model][nb_user] = {
                         "total": total,
@@ -192,12 +225,12 @@ if __name__ == "__main__":
 
     # Agrégation globale
     global_impacts = aggregate_global_impacts(impacts, models, user_counts)
-
+    plot_power_profiles(power_profiles, gpus, user_counts, models)
     # Affichage console
     for model in models:
         for nb_user in user_counts:
             data = global_impacts[model][nb_user]
-            print(f"[GLOBAL] {model} ({nb_user} users) → total: {data['total']:.2f} mgCO2eq")
+            print(f"[GLOBAL] {model} ({nb_user} users) → total: {data['total']} gCO2eq")
 
     # Plots globaux
     plot_impact_bar_global(global_impacts, user_counts, models)
