@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import json
+import csv
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -113,7 +114,46 @@ def aggregate_global_impacts(impacts, models, user_counts):
     print(global_impacts)
     return global_impacts
 
+def save_global_impacts_to_csv(global_impacts,impacts, filename="measure/data/global_impacts.csv"):
+    # Préparer les lignes
+    rows = []
 
+    # --- Impacts individuels (par GPU)
+    for gpu_name, gpu_data in impacts.items():
+        for model, model_data in gpu_data.items():
+            for nb_user, impact_values in model_data.items():
+                rows.append({
+                    "gpu": gpu_name,
+                    "model": model,
+                    "nb_user": nb_user,
+                    "scope": "per_gpu",
+                    "total": impact_values.get("total", 0),
+                    "usage": impact_values.get("usage", 0),
+                    "manufacturing": impact_values.get("manufacturing", 0)
+                })
+
+    # --- Impact global (tous GPU)
+    for model, user_data in global_impacts.items():
+        for nb_user, impact_values in user_data.items():
+            rows.append({
+                "gpu": "GLOBAL",  # balise pour le total
+                "model": model,
+                "nb_user": nb_user,
+                "scope": "global",
+                "total": impact_values.get("total", 0),
+                "usage": impact_values.get("usage", 0),
+                "manufacturing": impact_values.get("manufacturing", 0)
+            })
+
+    # --- Écriture CSV
+    with open(filename, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["gpu", "model", "nb_user", "scope", "total", "usage", "manufacturing"]
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"✅ Données enregistrées dans {filename}")
 # --- Plot global : impact total ---
 def plot_impact_bar_global(global_impacts, user_counts=[1, 10, 100], models=None):
     if models is None:
@@ -225,6 +265,7 @@ if __name__ == "__main__":
 
     # Agrégation globale
     global_impacts = aggregate_global_impacts(impacts, models, user_counts)
+    save_global_impacts_to_csv(global_impacts,impacts)
     plot_power_profiles(power_profiles, gpus, user_counts, models)
     # Affichage console
     for model in models:
