@@ -35,7 +35,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
         os.environ[f"{prefix}_RELEASE_DATE"] = gpu_info["date_sortie"]
         os.environ[f"{prefix}_FU"] = gpu_info["fu"]
 
-        toml_config["ollama_instances"][f"127.0.0.1:{11432 + int(gpu_id)}"] = int(gpu_id)
+        toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(gpu_id)
     
 
 

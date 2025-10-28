@@ -2,7 +2,7 @@
 
 # Constants
 HOST="0.0.0.0"
-BASE_PORT=11432
+BASE_PORT=53100
 LOG_DIR="ollama-server-logs"
 SLEEP_INTERVAL=1
 
