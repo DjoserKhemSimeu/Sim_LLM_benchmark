@@ -52,8 +52,18 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
   python3 -m venv ~/ollama
   source ~/ollama/bin/activate
 
+
+
   ```
   ```
+- Run by using uv :
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+```
+```bash
+uv run  main.py --config test.json
+```
 - Required Python dependencies listed in `requirements.txt`
 
 To install the dependencies:
