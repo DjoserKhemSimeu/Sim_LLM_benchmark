@@ -1,0 +1,15 @@
+[project]
+name = "sim-llm-benchmark"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ollama>=0.6.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.3",
+    "scipy>=1.16.3",
+    "seaborn>=0.13.2",
+    "toml>=0.10.2",
+    "tomli-w>=1.2.0",
+]
