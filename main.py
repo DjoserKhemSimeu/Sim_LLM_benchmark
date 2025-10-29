@@ -3,6 +3,7 @@ import argparse
 import subprocess
 import sys
 import os
+import time
 import signal
 import re
 from configs.config import set_env_from_gpu_config
@@ -13,6 +14,8 @@ MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
 MODELS = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
 os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + os.pathsep + "."
+
+
 def detecter_ports_ollama():
     """Détecte les ports utilisés par Ollama."""
     try:
@@ -28,6 +31,7 @@ def detecter_ports_ollama():
     except Exception as e:
         print(f"Erreur lors de la détection des ports : {e}")
         return []
+
 
 def tuer_tous_processus_ollama():
     """Tue tous les processus liés à Ollama."""
@@ -51,7 +55,9 @@ def tuer_tous_processus_ollama():
         cmd = "pgrep -f ollama"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         if result.stdout.strip():
-            print("Certains processus Ollama n'ont pas pu être arrêtés. Tentative avec SIGKILL...")
+            print(
+                "Certains processus Ollama n'ont pas pu être arrêtés. Tentative avec SIGKILL..."
+            )
             for pid in result.stdout.strip().split():
                 try:
                     os.kill(int(pid), signal.SIGKILL)
@@ -62,9 +68,17 @@ def tuer_tous_processus_ollama():
     except Exception as e:
         print(f"Erreur lors de l'arrêt des processus Ollama: {e}")
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Lance un benchmark après configuration des GPU.")
-    parser.add_argument("--config", type=str, required=True, help="Chemin vers le fichier JSON de configuration des GPU.")
+    parser = argparse.ArgumentParser(
+        description="Lance un benchmark après configuration des GPU."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Chemin vers le fichier JSON de configuration des GPU.",
+    )
     args = parser.parse_args()
     # Libérer les ports utilisés par Ollama avant la prochaine itération
     ports_ollama = detecter_ports_ollama()
@@ -74,13 +88,11 @@ def main():
     else:
         print("Aucun port Ollama détecté.")
 
-
     for model in MODELS:
         print(f"Running the Sim LLM benchmark with the model: {model}")
         os.environ["BENCH_MODEL"] = model
         set_env_from_gpu_config(args.config)
 
-        
         main_impact()
         # Afficher toutes les variables d'environnement
         for key, value in os.environ.items():
@@ -96,7 +108,7 @@ def main():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1
+            bufsize=1,
         )
         for line in process.stdout:
             print(line, end="")
@@ -122,7 +134,7 @@ def main():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        bufsize=1
+        bufsize=1,
     )
     for line in process.stdout:
         print(line, end="")
@@ -133,6 +145,6 @@ def main():
         print("Backtrace :\n" + stderr_output)
         sys.exit(1)
 
+
 if __name__ == "__main__":
     main()
-
