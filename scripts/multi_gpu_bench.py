@@ -50,8 +50,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
 
         try:
             start_req = time.time()
-            # response = await client.chat(model=model, messages=[msg])
-            time.sleep(0.5)  # TEST
+            response = await client.chat(model=model, messages=[msg])
+            # time.sleep(0.5)  # TEST
             elapsed = time.time() - start_req
             times.append(elapsed)
 
@@ -133,7 +133,16 @@ def plot_latency_and_efficiency(results):
     csv_path = f"./measure/data/latency_efficiency_data_{MODEL}.csv"
     df.to_csv(csv_path, index=False)
     print(f"Données enregistrées sous {csv_path}")
+    raw_data = []
+    for u, lats in zip(users, latencies):
+        for lat in lats:
+            raw_data.append({"nb_users": u, "latency": lat})
 
+    df_raw = pd.DataFrame(raw_data)
+    print(df_raw)
+    raw_csv_path = f"./measure/data/raw_latencies_{MODEL}.csv"
+    df_raw.to_csv(raw_csv_path, index=False)
+    print(f"Données brutes enregistrées sous {raw_csv_path}")
     # --- Création des graphiques ---
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
