@@ -5,6 +5,8 @@ import os
 from utils.utils_file import run_front_bash_script
 from typing import Dict, Any
 import tomli_w
+import shutil
+
 
 def set_env_from_gpu_config(config_path: str) -> None:
     """Lit le fichier JSON et définit les variables d'environnement."""
@@ -13,10 +15,14 @@ def set_env_from_gpu_config(config_path: str) -> None:
 
     # Nombre total de GPU
     num_gpus = len(config["gpus"])
+    tegra = 0
+    if shutil.which("tegrastats") is not None:
+        tegra = 1
+    os.environ["BENCH_TEGRA"] = str(tegra)
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
     os.environ["BENCH_PUE"] = str(config["PUE"])
-    os.environ["BENCH_USERS"]= json.dumps(config["Nb_users"])
-    model = os.environ.get("BENCH_MODEL","mistral:7b")
+    os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
+    model = os.environ.get("BENCH_MODEL", "mistral:7b")
     toml_config = {
         "model": model,
         "system_message": "You are an assistant",
@@ -35,21 +41,29 @@ def set_env_from_gpu_config(config_path: str) -> None:
         os.environ[f"{prefix}_RELEASE_DATE"] = gpu_info["date_sortie"]
         os.environ[f"{prefix}_FU"] = gpu_info["fu"]
 
-        toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(gpu_id)
-    
-
+        toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(
+            gpu_id
+        )
 
     with open("configs/config.toml", "wb") as f:
         tomli_w.dump(toml_config, f)
 
-
-
-    run_front_bash_script("scripts/ollama-batch-servers.sh",os.environ["BENCH_NUM_GPU"],model)
+    run_front_bash_script(
+        "scripts/ollama-batch-servers.sh", os.environ["BENCH_NUM_GPU"], model
+    )
     print(f"Variables d'environnement définies pour {num_gpus} GPU(s).")
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Définir des variables d'environnement à partir d'un fichier JSON de configuration GPU.")
-    parser.add_argument("--config", type=str, required=True, help="Chemin vers le fichier JSON de configuration des GPU.")
+    parser = argparse.ArgumentParser(
+        description="Définir des variables d'environnement à partir d'un fichier JSON de configuration GPU."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Chemin vers le fichier JSON de configuration des GPU.",
+    )
     args = parser.parse_args()
 
     set_env_from_gpu_config(args.config)
@@ -58,9 +72,7 @@ def main():
     for key, value in os.environ.items():
         if key.startswith("BENCH_"):
             print(f"{key}={value}")
-    
+
 
 if __name__ == "__main__":
     main()
-
-
