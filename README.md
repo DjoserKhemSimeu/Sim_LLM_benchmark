@@ -1,11 +1,11 @@
-# 🧠 Sim LLM Benchmark
+# Sim LLM Benchmark
 
 **Sim LLM Benchmark** is a tool designed to **evaluate the environmental impact of language model (LLM) inference** across various computing infrastructures.  
 It supports both **large-scale systems** (e.g., Grid5000 GPUs) and **edge devices** (e.g., Jetson AGX Orin), allowing users to simulate and analyze performance under different concurrency levels.
 
 ---
 
-## 📚 Table of Contents
+## Table of Contents
 1. [How It Works](#how-it-works)
 2. [Prerequisites](#prerequisites)
 3. [Usage](#usage)
@@ -16,7 +16,7 @@ It supports both **large-scale systems** (e.g., Grid5000 GPUs) and **edge device
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 
@@ -38,7 +38,7 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 
 ---
 
-## 🧩 Prerequisites
+## Prerequisites
 
 - Python **3.8** or higher  
 - **Ollama** installed and configured  
@@ -78,7 +78,7 @@ export OLLAMA_MODELS=/tmp/ollama
 ```
 ---
 
-## 🚀 Usage
+## Usage
 
 Run the benchmark using:
 
@@ -94,7 +94,7 @@ python main.py --config configs/gpu_specs.json
 
 ---
 
-## 🗂️ JSON Input File
+## JSON Input File
 
 The benchmark requires a JSON configuration file defining the computing infrastructure.
 
@@ -124,7 +124,7 @@ The benchmark requires a JSON configuration file defining the computing infrastr
 
 ---
 
-## 🧾 Description of JSON Fields
+## Description of JSON Fields
 
 | **Field**             | **Description** |
 |------------------------|----------------|
@@ -145,7 +145,7 @@ The benchmark requires a JSON configuration file defining the computing infrastr
 
 ---
 
-## 🧠 Compatibility
+## Compatibility
 
 Sim LLM Benchmark supports both:
 
@@ -157,7 +157,7 @@ Sim LLM Benchmark supports both:
 
 ---
 
-## 📊 Outputs
+## Outputs
 
 All results are saved automatically in two main formats:
 
