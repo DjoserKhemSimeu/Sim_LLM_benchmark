@@ -22,7 +22,7 @@ def get_gpu_info_from_env():
     for gpu_id in range(num_gpus):
         prefix = f"BENCH_GPU_{gpu_id}"
         gpus[gpu_id] = {
-            "name": os.environ.get(f"{prefix}_NAME"),
+            "name": os.environ.get(f"{prefix}_NAME", f"GPU_{gpu_id}"),
             "impact": float(os.environ.get(f"{prefix}_IMPACT", 0)),  # kgCO2eq
         }
     return gpus, PUE
@@ -43,9 +43,9 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
                     if not data.empty:
                         power_profiles[gpu_id][model][nb_user] = data
                     else:
-                        print(f"Fichier vide : {file_path}")
+                        print(f"⚠️ Fichier vide : {file_path}")
                 else:
-                    print(f"Fichier introuvable : {file_path}")
+                    print(f"⚠️ Fichier introuvable : {file_path}")
     return power_profiles
 
 
@@ -55,7 +55,6 @@ def compute_energy(power_profile):
     mask = np.isfinite(power)
     power = power[mask]
     timestamps = timestamps[mask]
-    print(f"Trapz : {np.trapz(power, timestamps)}")
     return np.trapz(power, timestamps) / 3_600_000  # kWh
 
 
@@ -69,11 +68,12 @@ def compute_impact(energy_kWh, impact_manufacturing_kg, PUE, duration):
     co2_usage = energy_kWh * EGM  # gCO2eq
     soft_manufacturing_kg = (duration / seven_years) * impact_manufacturing_kg
     total_impact = co2_usage + (soft_manufacturing_kg * 1000)  # gCO2eq
-    print(total_impact)
     return total_impact, co2_usage, soft_manufacturing_kg * 1000
 
 
 def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=None):
+    if models is None:
+        models = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
     for model in models:
         for nb_user in user_counts:
             fig, ax = plt.subplots(figsize=(10, 5))
@@ -98,44 +98,50 @@ def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=N
 
 
 # --- Agrégation des impacts globaux ---
+# --- Agrégation des impacts globaux (somme sur tous les GPU) ---
 def aggregate_global_impacts(impacts, models, user_counts):
+    """
+    Agrège les impacts globaux en sommant tous les GPU de l'infrastructure.
+    impacts : dict[gpu_name -> model -> nb_user -> {usage, manufacturing, total}]
+    """
+    print(impacts)
     global_impacts = {model: {} for model in models}
     for model in models:
         for nb_user in user_counts:
-            total = sum(
-                gpu_data[model].get(nb_user, {}).get("total", 0)
-                for gpu_data in impacts.values()
-            )
-            usage = sum(
-                gpu_data[model].get(nb_user, {}).get("usage", 0)
-                for gpu_data in impacts.values()
-            )
-            manufacturing = sum(
-                gpu_data[model].get(nb_user, {}).get("manufacturing", 0)
-                for gpu_data in impacts.values()
-            )
+            total = 0
+            usage = 0
+            manufacturing = 0
+            for gpu_name, gpu_data in impacts.items():
+                if model in gpu_data and nb_user in gpu_data[model]:
+                    total += gpu_data[model][nb_user].get("total", 0)
+                    usage += gpu_data[model][nb_user].get("usage", 0)
+                    manufacturing += gpu_data[model][nb_user].get("manufacturing", 0)
+
             global_impacts[model][nb_user] = {
                 "total": total,
                 "usage": usage,
                 "manufacturing": manufacturing,
             }
-    print(global_impacts)
     return global_impacts
 
 
 def save_global_impacts_to_csv(
     global_impacts, impacts, filename="measure/data/global_impacts.csv"
 ):
-    # Préparer les lignes
+    """
+    Sauvegarde les impacts par GPU et les impacts globaux (somme de tous les GPU)
+    dans le fichier CSV.
+    """
     rows = []
 
-    # --- Impacts individuels (par GPU)
+    # --- Impacts individuels ---
+    gpu_index = 0
     for gpu_name, gpu_data in impacts.items():
         for model, model_data in gpu_data.items():
             for nb_user, impact_values in model_data.items():
                 rows.append(
                     {
-                        "gpu": gpu_name,
+                        "gpu": f"{gpu_name}_{gpu_index}",
                         "model": model,
                         "nb_user": nb_user,
                         "scope": "per_gpu",
@@ -144,23 +150,25 @@ def save_global_impacts_to_csv(
                         "manufacturing": impact_values.get("manufacturing", 0),
                     }
                 )
+        gpu_index += 1
 
-    # --- Impact global (tous GPU)
+    # --- Impacts globaux (somme sur tous les GPU) ---
     for model, user_data in global_impacts.items():
         for nb_user, impact_values in user_data.items():
             rows.append(
                 {
-                    "gpu": "GLOBAL",  # balise pour le total
+                    "gpu": "GLOBAL",
                     "model": model,
                     "nb_user": nb_user,
                     "scope": "global",
-                    "total": impact_values.get("total", 0),
-                    "usage": impact_values.get("usage", 0),
-                    "manufacturing": impact_values.get("manufacturing", 0),
+                    "total": impact_values["total"],
+                    "usage": impact_values["usage"],
+                    "manufacturing": impact_values["manufacturing"],
                 }
             )
 
-    # --- Écriture CSV
+    # --- Écriture du CSV ---
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
@@ -205,13 +213,10 @@ def plot_impact_bar_global(global_impacts, user_counts=[1, 10, 100], models=None
                 edgecolor="black",
                 label=f"{model}" if user_idx == 0 else "",
             )
+
         if user_idx < len(user_counts) - 1:
-            separator_x = (
-                (group_start - 1) + len(models) * group_spacing - bar_width / 2
-            )
-            plt.axvline(
-                x=separator_x + bar_width, color="gray", linestyle="--", linewidth=1.5
-            )
+            separator_x = group_start + len(models) * group_spacing - bar_width / 2
+            plt.axvline(x=separator_x + bar_width, color="gray", linestyle="--", linewidth=1.5)
 
     x_ticks = [
         user_idx * (len(models) * group_spacing)
@@ -219,29 +224,23 @@ def plot_impact_bar_global(global_impacts, user_counts=[1, 10, 100], models=None
         - 0.5
         for user_idx in range(len(user_counts))
     ]
-    x_labels = [
-        f"{nb_user} user{'s' if nb_user > 1 else ''}" for nb_user in user_counts
-    ]
+    x_labels = [f"{nb_user} user{'s' if nb_user > 1 else ''}" for nb_user in user_counts]
 
     plt.xticks(x_ticks, x_labels)
     plt.xlabel("Number of users")
     plt.ylabel("Global warming potential (gCO2eq)")
-    plt.title("Global impact (all GPUs combined)")
+    plt.title("Global impact (sum over all GPUs)")
     plt.grid(axis="y", linestyle="--", alpha=0.7)
     plt.legend(title="Model", bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
 
     os.makedirs("images/impact_plots", exist_ok=True)
-    plt.savefig(
-        "images/impact_plots/global_impact_by_model.png", bbox_inches="tight", dpi=300
-    )
+    plt.savefig("images/impact_plots/global_impact_by_model.png", bbox_inches="tight", dpi=300)
     plt.close()
 
 
 # --- Plot global : proportion fabrication vs utilisation ---
-def plot_manufacturing_vs_usage_global(
-    global_impacts, user_counts=[1, 10, 100], models=None
-):
+def plot_manufacturing_vs_usage_global(global_impacts, user_counts=[1, 10, 100], models=None):
     if models is None:
         models = list(global_impacts.keys())
 
@@ -258,37 +257,30 @@ def plot_manufacturing_vs_usage_global(
             total = manufacturing + usage
             plt.bar(
                 idx,
-                manufacturing / total * 100,
+                manufacturing,
                 width=bar_width,
                 color="b",
                 label="Manufacturing" if idx == 0 else "",
             )
             plt.bar(
                 idx,
-                usage / total * 100,
+                usage,
                 width=bar_width,
-                bottom=manufacturing / total * 100,
+                bottom=manufacturing,
                 color="g",
                 label="Usage" if idx == 0 else "",
             )
 
-    xticks_labels = [
-        f"{model}\n({nb_user} users)" for model in models for nb_user in user_counts
-    ]
+    xticks_labels = [f"{model}\n({nb_user} users)" for model in models for nb_user in user_counts]
     plt.xticks(positions, xticks_labels, rotation=45, ha="right")
-    plt.ylabel("Proportion (%)")
-    plt.title("Global proportion manufacturing vs usage (all GPUs combined)")
-    plt.gca().yaxis.set_major_formatter(PercentFormatter())
+    plt.ylabel("Impact (gCO2eq)")
+    plt.title("Global impact breakdown (manufacturing vs usage)")
     plt.legend()
     plt.grid(True, axis="y", linestyle="--", alpha=0.7)
     plt.tight_layout()
 
     os.makedirs("images/proportion_plots", exist_ok=True)
-    plt.savefig(
-        "images/proportion_plots/global_proportion_all_models.png",
-        bbox_inches="tight",
-        dpi=300,
-    )
+    plt.savefig("images/proportion_plots/global_breakdown_all_models.png", bbox_inches="tight", dpi=300)
     plt.close()
 
 
@@ -299,38 +291,34 @@ if __name__ == "__main__":
     models = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
 
     power_profiles = load_power_profiles(gpus, user_counts, models)
-    impacts = {gpu["name"]: {model: {} for model in models} for gpu in gpus.values()}
+    impacts = {f"{gpu['name']}_{gpu_id}": {model: {} for model in models} for gpu_id, gpu in gpus.items()}
 
     # Calcul des impacts individuels
     for gpu_id, gpu in gpus.items():
         for model in models:
             for nb_user in user_counts:
                 if nb_user in power_profiles[gpu_id][model]:
-                    print(f"{gpu_id}:{model}:{nb_user}")
                     energy_kWh = compute_energy(power_profiles[gpu_id][model][nb_user])
-                    print(f"Energy: {energy_kWh}")
                     duration = compute_duration(power_profiles[gpu_id][model][nb_user])
-
-                    print(f"Duration: {duration}")
-                    total, usage, manufacturing = compute_impact(
-                        energy_kWh, gpu["impact"], PUE, duration
-                    )
-                    impacts[gpu["name"]][model][nb_user] = {
+                    total, usage, manufacturing = compute_impact(energy_kWh, gpu["impact"], PUE, duration)
+                    impacts[f"{gpu["name"]}_{gpu_id}"][model][nb_user] = {
                         "total": total,
                         "usage": usage,
                         "manufacturing": manufacturing,
                     }
 
-    # Agrégation globale
+    # Agrégation multi-GPU
     global_impacts = aggregate_global_impacts(impacts, models, user_counts)
     save_global_impacts_to_csv(global_impacts, impacts)
-    plot_power_profiles(power_profiles, gpus, user_counts, models)
+
     # Affichage console
     for model in models:
         for nb_user in user_counts:
             data = global_impacts[model][nb_user]
-            print(f"[GLOBAL] {model} ({nb_user} users) → total: {data['total']} gCO2eq")
+            print(f"[GLOBAL] {model} ({nb_user} users) → total: {data['total']:.2f} gCO2eq")
 
-    # Plots globaux
+    # Graphiques
+    plot_power_profiles(power_profiles, gpus, user_counts, models)
     plot_impact_bar_global(global_impacts, user_counts, models)
     plot_manufacturing_vs_usage_global(global_impacts, user_counts, models)
+
