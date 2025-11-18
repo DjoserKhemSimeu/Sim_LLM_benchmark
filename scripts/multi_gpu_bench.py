@@ -17,8 +17,8 @@ from utils.utils_file import log_message, run_back_bash_script
 import threading
 
 # --- CONFIGURABLES ---
-T = 1800  # Durée du benchmark (en secondes)
-lamb = 0.025  # Taux moyen d'arrivée (req/s)
+T = 2  # Durée du benchmark (en secondes)
+lamb = 2  # Taux moyen d'arrivée (req/s)
 Max = 16  # Nb max de requêtes par utilisateur
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 print_lock = threading.Lock()
@@ -50,8 +50,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
 
         try:
             start_req = time.time()
-            response = await client.chat(model=model, messages=[msg])
-            # time.sleep(0.5)  # TEST
+            # response = await client.chat(model=model, messages=[msg])
+            time.sleep(0.5)  # TEST
             elapsed = time.time() - start_req
             times.append(elapsed)
 

@@ -8,6 +8,8 @@ import re
 from configs.config import set_env_from_gpu_config
 from measure.scripts.bar_impact import main_impact
 
+from measure.scripts.bar_impact_mtc import main_impact_mtc
+
 BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
 MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
@@ -15,16 +17,28 @@ MODELS = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lance un benchmark après configuration des GPU.")
-    parser.add_argument("--config", type=str, required=True, help="Chemin vers le fichier JSON de configuration des GPU.")
+    parser = argparse.ArgumentParser(
+        description="Lance un benchmark après configuration des GPU."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Chemin vers le fichier JSON de configuration des GPU.",
+    )
     args = parser.parse_args()
     # Libérer les ports utilisés par Ollama avant la prochaine itération
 
-
     set_env_from_gpu_config(args.config)
+    if os.environ.get("BENCH_MANUFACTURE_DATA") == "more-than-carbon":
+        MTC = True
+    else:
+        MTC = False
 
-        
-    main_impact()
+    if MTC:
+        main_impact_mtc()
+    else:
+        main_impact()
     # Afficher toutes les variables d'environnement
     for key, value in os.environ.items():
         if key.startswith("BENCH_GPU_"):
@@ -37,7 +51,7 @@ def main():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        bufsize=1
+        bufsize=1,
     )
     for line in process.stdout:
         print(line, end="")
@@ -48,6 +62,6 @@ def main():
         print("Backtrace :\n" + stderr_output)
         sys.exit(1)
 
+
 if __name__ == "__main__":
     main()
-

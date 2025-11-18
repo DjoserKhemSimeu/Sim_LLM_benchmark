@@ -9,6 +9,8 @@ import re
 from configs.config import set_env_from_gpu_config
 from measure.scripts.bar_impact import main_impact
 
+from measure.scripts.bar_impact_mtc import main_impact_mtc
+
 BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
 MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
@@ -87,13 +89,18 @@ def main():
         tuer_tous_processus_ollama()
     else:
         print("Aucun port Ollama détecté.")
-
+    if os.environ.get("BENCH_MANUFACTURE_DATA") == "more-than-carbon":
+        MTC = True
+    else:
+        MTC = False
     for model in MODELS:
         print(f"Running the Sim LLM benchmark with the model: {model}")
         os.environ["BENCH_MODEL"] = model
         set_env_from_gpu_config(args.config)
-
-        main_impact()
+        if MTC:
+            main_impact_mtc()
+        else:
+            main_impact()
         # Afficher toutes les variables d'environnement
         for key, value in os.environ.items():
             if key.startswith("BENCH_GPU_"):

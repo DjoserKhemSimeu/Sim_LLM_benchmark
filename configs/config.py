@@ -20,6 +20,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
         tegra = 1
     os.environ["BENCH_TEGRA"] = str(tegra)
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
+    os.environ["BENCH_MANUFACTURE_DATA"] = config["MANUFACTURE_DATA"]
     os.environ["BENCH_PUE"] = str(config["PUE"])
     os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
     model = os.environ.get("BENCH_MODEL", "mistral:7b")
@@ -40,6 +41,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
         os.environ[f"{prefix}_FOUNDRY"] = gpu_info["foundry"]
         os.environ[f"{prefix}_RELEASE_DATE"] = gpu_info["date_sortie"]
         os.environ[f"{prefix}_FU"] = gpu_info["fu"]
+        os.environ[f"{prefix}_DENSITY"] = str(gpu_info["density"])
 
         toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(
             gpu_id
