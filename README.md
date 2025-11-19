@@ -172,7 +172,7 @@ All results are saved automatically in two main formats:
 
 ---
 
-## Modifications récentes (local)
+## More than carbon updates
 
 Les fichiers ci-dessous ont été ajoutés ou modifiés localement pour étendre l'analyse des impacts :
 
@@ -211,3 +211,46 @@ Si vous souhaitez que j'ajoute :
 - les valeurs numériques au-dessus des barres (labels),
 - une option CLI pour choisir les facteurs ou le dossier de sortie,
 - ou une version sans `pandas` pour `scripts/water_from_mix.py`, dites-le et je l'ajoute.
+
+---
+
+## Configuration example ajouté (`test.json`)
+
+Un fichier de configuration `test.json` est fourni en exemple dans le dépôt. Il illustre
+comment activer l'utilisation des données `more-than-carbon` pour la fabrication
+et comment renseigner des paramètres supplémentaires :
+
+- `PUE`: facteur d'efficacité énergétique (ex. 1.5)
+- `MANUFACTURE_DATA`: clé indiquant la source des données de fabrication (ex. `more-than-carbon`)
+- `Nb_users`: liste des nombres d'utilisateurs simultanés testés (ex. `[1,10,100]`)
+- `gpus` → chaque GPU contient : `nom`, `die_area`, `tdp`, `density`, `tech_node`,
+  `type_memoire`, `taille_memoire`, `foundry`, `date_sortie`, `fu`.
+
+Extrait pertinent (`test.json`):
+
+```json
+{
+  "PUE": 1.5,
+  "MANUFACTURE_DATA": "more-than-carbon",
+  "Nb_users": [1,10,100],
+  "gpus": { "0": { "nom": "NVIDIA A100", "die_area": 826, "tdp": 400, "density": 65600000, "tech_node": "7", "taille_memoire": 40 } }
+}
+```
+
+Cette configuration permet aux scripts (`bar_impact_mtc.py`, `perf_show_mtc.py`) de lire
+les paramètres matérielles et d'utiliser les jeux de données locaux pour estimer les
+impacts de fabrication et de fonctionnement.
+
+---
+
+## Sources et références
+
+- Mix énergétique (données RTE - eco2mix) :
+  https://www.rte-france.com/donnees-publications/eco2mix-donnees-temps-reel/production-electricite-par-filiere
+- Jeu de données "More-than-Carbon" (impacts par composant) :
+  https://github.com/sophia-falk/more-than-carbon
+- Impacts de production d'électricité (ADEME - Base Empreinte) :
+  https://base-empreinte.ademe.fr/donnees/jeu-donnees/05585055-9742-4fff-81ff-ad2e30e1b791/0/true/null
+- Consommation en eau liée à la production d'énergie (revue scientifique) :
+  https://www.sciencedirect.com/science/article/pii/S1364032119305994
+
