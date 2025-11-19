@@ -119,7 +119,7 @@ def main_impact_mtc():
             )
             continue
 
-        total_impacts = {"Hardware": gpu["name"], "FU": gpu["fu"], "F_tot": F_tot_GPU}
+        total_impacts = {"Hardware": f"{gpu['name']}_{gpu_id}", "FU": gpu["fu"], "F_tot": F_tot_GPU}
 
         for cat in all_categories:
             cat_short = cat.split(" - ")[0]

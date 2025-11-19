@@ -1,0 +1,11 @@
+Source;Percentage;Water Use(L/MWh)
+Wind;14.0;279
+Solar;9.0;446
+Natural gas;3.0;847
+Geothermal;0.0;1224
+Nuclear;62.0;2103
+Coal;1.0;2325
+Oil;1.0;3190
+Hydropower;9.0;69930
+Biomass;1.0;537234
+

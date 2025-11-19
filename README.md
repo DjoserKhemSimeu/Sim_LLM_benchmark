@@ -169,3 +169,45 @@ All results are saved automatically in two main formats:
 ---
 
 ✅ **Sim LLM Benchmark** helps researchers and engineers understand how **GPU architecture** and **inference deployment scenarios** affect the **environmental footprint** of large language models.
+
+---
+
+## Modifications récentes (local)
+
+Les fichiers ci-dessous ont été ajoutés ou modifiés localement pour étendre l'analyse des impacts :
+
+- `measure/scripts/bar_impact_mtc.py`
+  - Calcule et exporte un résumé des impacts de fabrication estimés par GPU (en utilisant la méthode de proportionnalité basée sur un A100 de référence).
+  - Produit un graphique 100% empilé par catégorie d'impact montrant la part `Main dies` vs `Heatsink` et sauvegarde :
+    `manufacturing_impact_main_vs_heatsink_percent.png`.
+
+- `scripts/water_from_mix.py`
+  - Nouveau script standalone pour calculer la consommation d'eau (L et m³) associée à la production de 1 kWh à partir d'un fichier CSV de mix énergétique (`data/Energetic_mix_Fr.csv`).
+  - Usage : `python scripts/water_from_mix.py --csv data/Energetic_mix_Fr.csv --kwh 1`.
+
+- `measure/scripts/perf_show_mtc.py`
+  - Variante de `perf_show.py` qui combine les impacts liés à la consommation électrique (fournis dans `data/Electricity_impacts.csv`) avec les impacts de fabrication générés par `bar_impact_mtc`.
+  - Calcule les impacts pour trois facteurs : `GWP`, `ADPe`, `WU` et génère un graphique consolidé unique.
+  - Le graphique consolidé positionne côte-à-côte les barres par modèle et par nombre d'utilisateurs ; chaque facteur est distingué par un **motif (hachure)** et affiché sur son axe Y propre (unités converties et affichées) :
+    - GWP → affiché en `g CO2 eq` (valeurs converties depuis kg→g)
+    - ADPe → affiché en `mg Sb eq` (kg→mg)
+    - WU → affiché en `L` (m³→L)
+  - Le script trace également des lignes verticales pointillées pour séparer les groupes d'utilisateurs et sauvegarde l'image dans `images/combined_impact/global_combined_impacts.png`.
+
+Notes d'exécution et dépendances
+- Ces nouveaux scripts utilisent `pandas`, `numpy`, `matplotlib`, et `seaborn`. Installez-les si nécessaire :
+
+```bash
+pip install pandas numpy matplotlib seaborn
+```
+
+- Pour produire les graphiques combinés, exécutez :
+
+```bash
+python measure/scripts/perf_show_mtc.py
+```
+
+Si vous souhaitez que j'ajoute :
+- les valeurs numériques au-dessus des barres (labels),
+- une option CLI pour choisir les facteurs ou le dossier de sortie,
+- ou une version sans `pandas` pour `scripts/water_from_mix.py`, dites-le et je l'ajoute.

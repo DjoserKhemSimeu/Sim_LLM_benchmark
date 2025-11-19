@@ -1,0 +1,17 @@
+Impact Category;Unit;Value
+AP - Acidification;mol H+ eq;2.10e-04
+GWP - Climate change;kg CO2 eq;8.01e-02
+CTUe - Ecotoxicity, freshwater;CTUe;000
+PM - EF-particulate Matter;disease occurrence;4.16e-09
+Epf - Eutrophication, freshwater;kg P eq;3.27e-08
+Epm - Eutrophication marine;kg N eq;7.61e-05
+Ept - Eutrophication, terrestrial;mol N eq;4.98e-04
+CTUh-c - Human toxicity, cancer;CTUh;
+CTUh-nc - Human toxicity, non-cancer;CTUh;
+IR - Ionising radiation, human health;kBq U-235 eq;3.23
+LU - Land use;Pt;0
+ODP - Ozone depletion;kg CFC11 eq;8.77e-10
+POCP - Photochemical ozone formation - human health;kg NMVOC eq;2.11e-04
+ADPf - Resource use, fossils;MJ;9.31
+ADPe - Resource use, minerals and metals;kg Sb eq;4.86e-08
+WU - Water use;m³;0.013130

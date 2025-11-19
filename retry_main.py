@@ -13,6 +13,7 @@ from measure.scripts.bar_impact_mtc import main_impact_mtc
 BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
 MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
+EVALUATION_SCRIPT_MTC = "measure/scripts/perf_show_mtc.py"
 MODELS = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
 
 
@@ -46,8 +47,12 @@ def main():
 
     # Exécution finale du script d'évaluation
     print(f"Lancement du script d'évaluation : {args.config}")
+    if MTC:
+        evaluation_script = EVALUATION_SCRIPT_MTC
+    else:
+        evaluation_script = EVALUATION_SCRIPT
     process = subprocess.Popen(
-        [sys.executable, EVALUATION_SCRIPT],
+        [sys.executable, evaluation_script],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
