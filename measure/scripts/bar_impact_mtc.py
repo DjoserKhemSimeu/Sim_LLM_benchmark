@@ -76,19 +76,18 @@ def calculate_proportionality_factor(gpu, ref=A100_REF):
 
     # 1. Calcul de gamma (γ)
     # gamma = gpu["mem_tech_node"] / gpu["proc_tech_node"]
-    g1 = 0.7
-    g2 = 0.3
+    g1 = 0.7 # Poids pour la surface du die
+    g2 = 0.3 # Poids pour la taille de la mémoire
     # 2. Calcul du Facteur F_GPU_chip
     # F_GPU_chip ∝ γ(proc_die_area × proc_density) + (mem_size × mem_density) / mem_tech_node
 
-    term1_chip = g1 * ((gpu["die_area"] * gpu["density"]) / (826 * 65600000))
-    term2_chip = g2 * (gpu["mem_size"]) / 80
+    term1_chip = g1 * ((gpu["die_area"] * gpu["density"]) / (ref["die_area"] * ref["density"])) # Normalisation par rapport à l'A100
+    term2_chip = g2 * (gpu["mem_size"] / ref["mem_size"]) # Normalisation par rapport à l'A100
     F_GPU_chip = term1_chip + term2_chip
 
     # 3. Calcul du Facteur F_heatsink
     # F_heatsink ∝ GPU_TDP
-    F_heatsink = gpu["tdp"]
-
+    F_heatsink = gpu["tdp"]/ref["tdp"]
     # 4. Facteur Total F_tot
     F_tot = F_GPU_chip + F_heatsink
 
@@ -103,28 +102,17 @@ def main_impact_mtc():
 
     gpus = get_gpu_info_from_env()
 
-    # --- 1. Calcul du Facteur Total de Proportionalité pour l'A100 de Référence ---
-    # Utilisez les caractéristiques fixes de l'A100
-    F_GPU_chip_A100, F_heatsink_A100, F_tot_A100 = calculate_proportionality_factor(
-        A100_REF
-    )
 
-    if F_tot_A100 == 0:
-        print(
-            "Erreur: Le facteur de proportionalité de l'A100 de référence est zéro. Vérifiez A100_REF."
-        )
-        return
-
-    print(f"\nFacteur Total de Proportionalité A100 (F_tot,A100) : {F_tot_A100:.2e}")
-
-    # --- 2. Calcul des Impacts pour TOUS les GPUs ---
+    # --- 1. Calcul des Impacts pour TOUS les GPUs ---
 
     summary_data = []
 
     for gpu_id, gpu in gpus.items():
         # 2.1. Calculer F_tot pour le GPU actuel
         F_GPU_chip, F_heatsink, F_tot_GPU = calculate_proportionality_factor(gpu)
-
+        print(
+            f"\nCalcul des impacts pour le GPU {gpu['name']} (ID: {gpu_id}) avec F_tot = {F_tot_GPU:.2e}"
+        )
         if F_tot_GPU == 0:
             print(
                 f"Avertissement: Facteur F_tot nul pour le GPU {gpu['name']}. Skipping."
@@ -143,13 +131,12 @@ def main_impact_mtc():
 
             # 2.3. Estimer l'impact du GPU actuel par produit en croix (Proportionalité)
             # Impact_GPU = (Impact_A100_total * F_tot_GPU) / F_tot_A100
-            impact_GPU_chip_estimated = (impact_A100_total * F_GPU_chip) / F_tot_A100
-            impact_GPU_heatsink_estimated = (
-                impact_A100_total * F_heatsink
-            ) / F_tot_A100
-            impact_GPU_estimated = (impact_A100_total * F_tot_GPU) / F_tot_A100
+            impact_GPU_chip_estimated = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
+            impact_GPU_heatsink_estimated = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
+            impact_GPU_estimated = impact_GPU_chip_estimated + impact_GPU_heatsink_estimated
 
             total_impacts[cat_short] = impact_GPU_estimated
+
 
             # Sauvegarde des variables d'environnement (y compris pour GWP, ADPf, WU)
             env_var_name = f"BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')}"
@@ -171,6 +158,7 @@ def main_impact_mtc():
     # --- 3. Affichage Récapitulatif (Concentration sur GWP, ADPf, WU) ---
 
     df_summary = pd.DataFrame(summary_data)
+    df_summary.to_csv("data/manufacturing_impact_summary_mtc.csv", index=False)
 
     # Identifier les colonnes d'impact qui nous intéressent + F_tot
     impact_cols_short = [c.split(" - ")[0] for c in TARGET_CATEGORIES]
@@ -193,67 +181,91 @@ def main_impact_mtc():
     )
     print(df_display.to_markdown(index=False))
 
-    # --- 4. Création du Heatmap (pour tous les 16 facteurs, comme demandé précédemment) ---
+    # --- 4. Création d'un bar plot 100% empilé pour Main dies vs Heatsink ---
+    # Pour chaque catégorie d'impact, on somme la contribution estimée
+    # des GPUs pour Main dies et Heatsink séparément, puis on trace
+    # une barre empilée normalisée à 100% montrant les parts relatives.
 
-    # Identifier les colonnes d'impact pour la normalisation (tous les 16)
-    all_impact_cols_short = [c.split(" - ")[0] for c in all_categories]
+    if len(gpus) == 0:
+        print("Aucun GPU détecté (BENCH_NUM_GPU=0) — pas de graphique empilé généré.")
+    else:
+        cats_short = [c.split(" - ")[0] for c in all_categories]
+        sum_main = {cs: 0.0 for cs in cats_short}
+        sum_heat = {cs: 0.0 for cs in cats_short}
 
-    # Normalisation et Heatmap (comme dans la réponse précédente)
-    df_normalized = df_summary.copy()
+        # Somme des contributions Main dies et Heatsink sur tous les GPUs
+        for gpu_id, gpu in gpus.items():
+            F_GPU_chip, F_heatsink, F_tot_GPU = calculate_proportionality_factor(gpu)
+            if F_tot_GPU == 0:
+                continue
+            for cat in all_categories:
+                cs = cat.split(" - ")[0]
+                main_val = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
+                heat_val = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
+                sum_main[cs] += main_val
+                sum_heat[cs] += heat_val
 
-    scaler = MinMaxScaler()
-    df_normalized[all_impact_cols_short] = scaler.fit_transform(
-        df_normalized[all_impact_cols_short]
-    )
+        df_comp = pd.DataFrame({"Main dies": sum_main, "Heatsink": sum_heat})
 
-    fu_order = ["Edge", "Gaming", "Desktop", "Large-scale"]
-    df_normalized["FU"] = pd.Categorical(
-        df_normalized["FU"], categories=fu_order, ordered=True
-    )
-    df_normalized = df_normalized.sort_values(["FU", "Hardware"])
+        # Calculer pourcentages normalisés à 100% par catégorie
+        df_pct = df_comp.div(df_comp.sum(axis=1), axis=0).fillna(0) * 100
 
-    heatmap_data = df_normalized.set_index("Hardware")[all_impact_cols_short]
+        # Tracé empilé vertical par catégorie (Main dies en bas, Heatsink au-dessus)
+        fig, ax = plt.subplots(figsize=(16, 6))
+        x = range(len(df_pct))
+        colors = ["#8dd3c7", "#fb8072"]  # choix simple : vert clair / rouge clair
 
-    plt.figure(figsize=(14, 10))
-    sns.heatmap(
-        heatmap_data,
-        cmap="viridis",
-        annot=False,
-        fmt=".2f",
-        linewidths=0.5,
-        cbar_kws={"label": "Impact Relatif (Normalisé 0-1)", "pad": 0.02},
-    )
+        ax.bar(x, df_pct["Main dies"].values, label="Main dies (GPU chip)", color=colors[0], edgecolor="white")
+        ax.bar(x, df_pct["Heatsink"].values, bottom=df_pct["Main dies"].values, label="Heatsink", color=colors[1], edgecolor="white")
 
-    plt.title(
-        "Impact de Fabrication Relatif des GPUs (16 Catégories) - Méthode Proportionalité",
-        fontsize=16,
-    )
-    plt.xlabel("Catégories d'Impact", fontsize=14)
-    plt.ylabel("Hardware (Trié par Catégorie d'Usage)", fontsize=14)
+        # Annoter pour chaque catégorie : total absolu (Main+Heatsink) avec unité
+        try:
+            unit_map = pd.read_csv("./data/more-than-carbon-data.csv", sep=";").set_index("Impact Category")["Unit"].to_dict()
+        except Exception:
+            unit_map = {cat: "" for cat in all_categories}
 
-    current_idx = 0
-    for fu in fu_order:
-        count = df_normalized[df_normalized["FU"] == fu].shape[0]
-        if count > 0 and current_idx > 0:
-            plt.axhline(current_idx, color="red", linestyle="-", linewidth=2)
-
-        if count > 0:
-            plt.text(
-                heatmap_data.shape[1] + 0.5,
-                current_idx + count / 2,
-                fu,
-                verticalalignment="center",
-                horizontalalignment="left",
-                fontsize=10,
-                color="black",
+        totals_abs = (df_comp.sum(axis=1)).values
+        texts = []
+        for i, cat in enumerate(all_categories):
+            short = cat.split(" - ")[0]
+            unit = unit_map.get(cat, "")
+            tot = totals_abs[i]
+            y_center = df_pct.iloc[i].sum() / 2.0  # centre en % (ex: 50)
+            # On place provisoirement le texte avec va='bottom' (on ajustera ensuite)
+            t = ax.text(
+                i,
+                y_center,
+                f"{tot:.3g} {unit}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                rotation=90,
+                fontweight="bold",
+                bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 2},
             )
-        current_idx += count
+            texts.append((t, y_center))
 
-    plt.yticks(rotation=0)
-    plt.xticks(rotation=90)
-    plt.tight_layout()
+        # Forcer le rendu pour que get_window_extent() renvoie de vraies dimensions
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        inv = ax.transData.inverted()
 
-    plt.savefig("manufacturing_impact_heatmap_16_categories_proportionality.png")
-    print(
-        "\n✅ Heatmap sauvegardé avec la méthode de proportionalité : 'manufacturing_impact_heatmap_16_categories_proportionality.png'"
-    )
+        # Ajuster verticalement chaque texte pour qu'il soit centré (adapté à sa hauteur)
+        for t, y_center in texts:
+            bbox_disp = t.get_window_extent(renderer=renderer)          # bbox en pixels
+            bbox_data = inv.transform_bbox(bbox_disp)                  # bbox en coordonnées de données
+            height_data = bbox_data.height                             # hauteur en unités y de l'axe
+            # Comme on a utilisé va='bottom', pour centrer on place le bas à y_center - height/2
+            t.set_y(y_center - height_data / 2.0)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(df_pct.index, rotation=90)
+        ax.set_ylim(0, 110)
+        ax.set_ylabel("Contribution (%) — normalisé à 100% par catégorie")
+        ax.set_title("Répartition Main dies vs Heatsink par catégorie d'impact (somme des GPUs)")
+        ax.legend()
+        plt.tight_layout()
+
+        outname = "manufacturing_impact_main_vs_heatsink_percent.png"
+        plt.savefig(outname, dpi=200)
+        print(f"\n✅ Bar plot 100% empilé sauvegardé : '{outname}'")
