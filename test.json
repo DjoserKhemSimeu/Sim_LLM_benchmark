@@ -3,7 +3,7 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1,10,100],
+  "Nb_users":[1],
   "gpus": {
     "0": {
       "nom": "NVIDIA A100",

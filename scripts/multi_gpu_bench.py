@@ -5,6 +5,9 @@ import json
 import toml
 import argparse
 import subprocess
+import sys
+
+
 import numpy as np
 import os
 import pandas as pd
@@ -16,10 +19,18 @@ from ollama import AsyncClient
 from utils.utils_file import log_message, run_back_bash_script
 import threading
 
+# Globals to track issue solver subprocesses and handles
+ISSUE_SOLVER_PROCS = []
+ISSUE_SOLVER_HANDLES = []
+LAUNCH_ISSUE_SOLVER = True
+ISSUE_SOLVER_PATH = os.path.join('scripts', 'Git_issue_solver.py')
+WAIT_FOR_SOLVERS = False
+SYNC_ISSUE_SOLVER = True
+import functools
 # --- CONFIGURABLES ---
 T = 2  # Durée du benchmark (en secondes)
 lamb = 2  # Taux moyen d'arrivée (req/s)
-Max = 16  # Nb max de requêtes par utilisateur
+Max = 1  # Nb max de requêtes par utilisateur
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 print_lock = threading.Lock()
 df_prompts = pd.read_csv("data/prompts.csv")
@@ -35,34 +46,59 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
     clients = [AsyncClient(host=f"http://{h}") for h in hosts]
     nb_hosts = len(clients)
 
-    while time.time() < start + T and i < Max:
-        delta_t = np.random.exponential(1 / lamb)
-        delta_ts.append(delta_t)
-        await asyncio.sleep(delta_t)
+   
+    delta_t = np.random.exponential(1 / lamb)
+    delta_ts.append(delta_t)
+    await asyncio.sleep(delta_t)
 
-        if time.time() >= start + T:
-            break
 
-        host_idx = user_id % nb_hosts
-        client = clients[host_idx]
-        prompt = df_prompts["content"].sample(n=1).iloc[0]
-        msg = {"role": "user", "content": f"{prompt}"}
 
-        try:
-            start_req = time.time()
-            # response = await client.chat(model=model, messages=[msg])
-            time.sleep(0.5)  # TEST
-            elapsed = time.time() - start_req
-            times.append(elapsed)
-
-            log_message(
-                f"[User {user_id}] Req {i} on {hosts[host_idx]}: {elapsed:.3f}s"
-            )
-        except Exception as e:
-            log_message(f"[User {user_id}] Error on request {i}: {e}")
-        i += 1
+    host_idx = user_id % nb_hosts
+    client = clients[host_idx]
 
     delta_t_collector[user_id] = delta_ts
+
+    if LAUNCH_ISSUE_SOLVER:
+        try:
+            logs_dir = os.path.join('logs', 'issue_solver')
+            os.makedirs(logs_dir, exist_ok=True)
+            out_path = os.path.join(logs_dir, f'user_{user_id}.stdout.log')
+            err_path = os.path.join(logs_dir, f'user_{user_id}.stderr.log')
+            cmd = [sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}']
+            if SYNC_ISSUE_SOLVER:
+                # run synchronously for this client but offload blocking call to threadpool
+                out_log = open(out_path, 'a')
+                err_log = open(err_path, 'a')
+                run_call = functools.partial(subprocess.run, cmd, stdout=out_log, stderr=err_log, env=os.environ.copy(), close_fds=True)
+                loop = asyncio.get_running_loop()
+                log_message(f"[User {user_id}] Running issue solver synchronously (cmd={' '.join(cmd)})")
+                try:
+                    # await completion in threadpool
+                    completed = await loop.run_in_executor(None, run_call)
+                    log_message(f"[User {user_id}] Issue solver completed with returncode={getattr(completed, 'returncode', None)}")
+                except Exception as e:
+                    log_message(f"[User {user_id}] Issue solver sync run failed: {e}")
+                finally:
+                    try:
+                        out_log.close()
+                    except Exception:
+                        pass
+                    try:
+                        err_log.close()
+                    except Exception:
+                        pass
+            else:
+                out_log = open(out_path, 'a')
+                err_log = open(err_path, 'a')
+                proc = subprocess.Popen(cmd, stdout=out_log, stderr=err_log, env=os.environ.copy(), close_fds=True)
+                # keep references to proc and file handles for optional waiting/cleanup
+                ISSUE_SOLVER_PROCS.append(proc)
+                ISSUE_SOLVER_HANDLES.append((out_log, err_log))
+                log_message(f"[User {user_id}] Started issue solver subprocess (pid={proc.pid}), logs -> {logs_dir}")
+        except Exception as e:
+            log_message(f"[User {user_id}] Failed to start issue solver subprocess: {e}")
+    end=time.time()
+    times.append(end - start)
     return times
 
 
@@ -183,9 +219,22 @@ if __name__ == "__main__":
         default="configs/config.toml",
         help="Path to TOML config file",
     )
+    parser.add_argument('--no-issue-solver', action='store_true', help='Do not launch Git_issue_solver subprocesses per user')
+    parser.add_argument('--issue-solver-path', type=str, default=os.path.join('scripts', 'Git_issue_solver.py'), help='Path to the Git_issue_solver script')
+    parser.add_argument('--wait-for-solvers', action='store_true', help='Wait for launched issue solver subprocesses to finish before exiting')
+    parser.add_argument('--no-sync-issue-solver', action='store_true', help='Do not wait for issue solver per client (run in background)')
     users_list = json.loads(os.environ.get("BENCH_USERS", "[1,10,100]"))
 
     args = parser.parse_args()
+
+    # configure issue solver behavior
+
+    if args.no_issue_solver:
+        LAUNCH_ISSUE_SOLVER = False
+    ISSUE_SOLVER_PATH = args.issue_solver_path
+    WAIT_FOR_SOLVERS = args.wait_for_solvers
+    # By default clients wait for the solver; use --no-sync-issue-solver to disable
+    SYNC_ISSUE_SOLVER = not getattr(args, 'no_sync_issue_solver', False)
 
     try:
         results, delta_t = asyncio.run(benchmark(args.config, users_list))
