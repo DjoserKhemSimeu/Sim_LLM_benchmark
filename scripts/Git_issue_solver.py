@@ -10,20 +10,32 @@ import subprocess
 import os
 import json
 from pathlib import Path
-ID=0
+
 MODEL=os.environ.get("BENCH_MODEL", "ollama/mistral-nemo")
 # CLI: accept --user-id so external processes (bench) can pass the client id
 def parse_args():
     p = argparse.ArgumentParser(description='Run Git issue solver agent (optionally with user id)')
     p.add_argument('--user-id', type=int, default=None, help='Optional user id to associate with this run')
     p.add_argument('--host', type=str, default="http://localhost:11432", help='Host where the LLM server is running')
+    p.add_argument('--n_users', type=int, default=1, help='Number of users in the benchmark (for logging purposes)')
     return p.parse_args()
+
+args = parse_args()
+if args.user_id is not None:
+    try:
+        ID = int(args.user_id)
+    except Exception:
+        ID = 0
+HOST=args.host
+agent_env_path = os.path.join('agent_env', f'agent_env_user_{args.n_users}_{ID}')
+os.chdir(agent_env_path)
+
 class WebSearchInput(BaseModel):
-    query: str = Field(..., description="La requête de recherche web")
+    query: str = Field(..., description="The web search query")
 
 class WebSearchTool(BaseTool):
     name: str = "web_search"
-    description: str = "Effectue une recherche web gratuite via DuckDuckGo et retourne les URLs + extraits des résultats."
+    description: str = "Performs a free web search via DuckDuckGo and returns URLs and excerpts of results."
     args_schema: Type[BaseModel] = WebSearchInput
 
     def _run(self, query: str) -> str:
@@ -31,7 +43,7 @@ class WebSearchTool(BaseTool):
             with duckduckgo_search.DDGS() as ddgs:
                 results = ddgs.text(query, max_results=5)
             if not results:
-                return "Pas de résultats."
+                return "No results."
 
             output: List[str] = []
             for r in results:
@@ -53,20 +65,20 @@ class WebSearchTool(BaseTool):
                 output.append(entry)
             return "\n---\n".join(output)
         except Exception as e:
-            return f"Erreur pendant la recherche web: {e}"
+            return f"Error during web search: {e}"
 
 # -------------------------
-# Tools pour résolution d'issues
+# Tools for issue resolution
 # -------------------------
 
 
 class CloneRepoInput(BaseModel):
-    repo_url: str = Field(..., description="SSH du dépôt GitHub à cloner")
+    repo_url: str = Field(..., description="SSH URL of the GitHub repository to clone")
    
 
 class CloneRepoTool(BaseTool):
     name: str = "git_clone"
-    description: str = "Clone un dépôt GitHub localement (utilise `git` en CLI)."
+    description: str = "Clone a GitHub repository locally (uses the `git` CLI) and change into the cloned directory."
     args_schema: Type[BaseModel] =CloneRepoInput
 
     def _run(self, repo_url: str) -> str:
@@ -74,19 +86,20 @@ class CloneRepoTool(BaseTool):
           
             # run git clone
             subprocess.run(["git", "clone", repo_url], check=True)
-            return f"Cloned to: {repo_url.split('/')[-1].replace('.git','')}"
+            os.chdir(repo_url.split('/')[-1].replace('.git',''))
+            return f"Cloned to: {repo_url.split('/')[-1].replace('.git','')} and jumped into it"
         except Exception as e:
-            return f"Erreur clone: {e}"
+            return f"Clone error: {e}"
 
 
 class ReadFileInput(BaseModel):
-    path: str = Field(..., description="Chemin relatif dans le repo vers le fichier à lire")
+    path: str = Field(..., description="Relative path in the repo to the file to read, if you already used git clone you don't need to put the name of the repo")
     #repo_dir: Optional[str] = Field(None, description="Chemin du repo local")
 
 
 class ReadFileTool(BaseTool):
     name: str = "read_file"
-    description: str = "Lit un fichier dans le dépôt cloné et retourne son contenu."
+    description: str = "Reads a file in the cloned repository and returns its content."
     args_schema: Type[BaseModel] = ReadFileInput
 
     def _run(self, path: str) -> str:
@@ -95,18 +108,18 @@ class ReadFileTool(BaseTool):
             p = base / path
             return p.read_text(encoding='utf-8')
         except Exception as e:
-            return f"Erreur lecture fichier: {e}"
+            return f"File read error: {e}"
 
 
 class WriteFileInput(BaseModel):
-    path: str = Field(..., description="Chemin relatif dans le repo vers le fichier à écrire")
-    content: str = Field(..., description="Contenu à écrire")
+    path: str = Field(..., description="Relative path in the repo to the file to write")
+    content: str = Field(..., description="Content to write")
     
 
 
 class WriteFileTool(BaseTool):
     name: str = "write_file"
-    description: str = "Écrit du contenu dans un fichier du dépôt cloné (crée les répertoires si besoin)."
+    description: str = "Writes content to a file in the cloned repository (creates directories if needed)."
     args_schema: Type[BaseModel] = WriteFileInput
 
     def _run(self, path: str, content: str, repo_dir: Optional[str] = None) -> str:
@@ -117,17 +130,16 @@ class WriteFileTool(BaseTool):
             p.write_text(content, encoding='utf-8')
             return f"Wrote {p}"
         except Exception as e:
-            return f"Erreur write fichier: {e}"
+            return f"File write error: {e}"
 
 
 class RunTestsInput(BaseModel):
-    repo_dir: Optional[str] = Field(None, description="Chemin du repo local")
-    pytest_args: Optional[str] = Field(None, description="Arguments supplémentaires pour pytest")
+    pytest_args: Optional[str] = Field(None, description="Additional arguments for pytest")
 
 
 class RunTestsTool(BaseTool):
     name: str = "run_tests"
-    description: str = "Exécute la suite de tests via `pytest` si présente dans le dépôt."
+    description: str = "Runs the test suite via `pytest` if present in the repository."
     args_schema: Type[BaseModel] = RunTestsInput
 
     def _run(self, repo_dir: Optional[str] = None, pytest_args: Optional[str] = None) -> str:
@@ -141,17 +153,16 @@ class RunTestsTool(BaseTool):
         except FileNotFoundError:
             return json.dumps({"rc": 0, "stdout": "pytest not found; skipped", "stderr": ""})
         except Exception as e:
-            return f"Erreur run tests: {e}"
+            return f"Error running tests: {e}"
 
 
 class GitCommitInput(BaseModel):
-    repo_dir: Optional[str] = Field(None)
     message: str = Field(...)
 
 
 class GitCommitTool(BaseTool):
     name: str = "git_commit"
-    description: str = "Ajoute et commit les changements dans le dépôt local." 
+    description: str = "Stage and commit changes in the local repository." 
     args_schema: Type[BaseModel] = GitCommitInput
 
     def _run(self, repo_dir: Optional[str] = None, message: str = "update") -> str:
@@ -163,25 +174,21 @@ class GitCommitTool(BaseTool):
         except subprocess.CalledProcessError as e:
             return f"Git commit error: {e}"
         except Exception as e:
-            return f"Erreur git commit: {e}"
+            return f"Git commit error: {e}"
 
 
 class GitPushInput(BaseModel):
-    repo_dir: Optional[str] = Field(None)
-    
-    owner: Optional[str] = Field(None, description="Owner GitHub (optionnel, utile si token est utilisé)")
-    repo: Optional[str] = Field(None, description="Nom du repo GitHub (optionnel)")
-    force: Optional[bool] = Field(False, description="Pousser avec --force si nécessaire")
+    force: Optional[bool] = Field(False, description="Push with --force if necessary")
 
 
 class GitPushTool(BaseTool):
     name: str = "git_push"
-    description: str = "Pousse la branche locale vers le remote 'origin' (optionnellement en injectant le token pour l'auth)."
+    description: str = "Pushes the local branch to the 'origin' remote (optionally injecting the token for auth)."
     args_schema: Type[BaseModel]  = GitPushInput
 
     def _run(self, repo_dir: Optional[str] = None, owner: Optional[str] = None, repo: Optional[str] = None, token_env: Optional[str] = 'GITHUB_TOKEN', force: Optional[bool] = False) -> str:
         try:
-            branch=f'test_{ID}'
+            branch=f'test_{args.n_users}_{ID}'
             cwd = repo_dir or '.'
             # Ensure branch exists locally
             check = subprocess.run(["git", "rev-parse", "--verify", branch], cwd=cwd, capture_output=True, text=True)
@@ -226,19 +233,18 @@ class GitPushTool(BaseTool):
 
             return f"Push failed: {p.returncode} stdout={p.stdout} stderr={p.stderr}"
         except Exception as e:
-            return f"Erreur git push: {e}"
+            return f"Git push error: {e}"
 
 
 class CreateBranchInput(BaseModel):
-    repo_dir: Optional[str] = Field(None, description="Chemin du repo local")
-    branch: str = Field(..., description="Nom de la branche à créer")
-    start_point: Optional[str] = Field(None, description="Commit/branch de départ (ex: main)")
-    checkout: Optional[bool] = Field(True, description="Si True, basculer sur la nouvelle branche après création")
+    branch: str = Field(..., description="Name of the branch to create")
+    start_point: Optional[str] = Field(None, description="Start commit/branch (e.g., main)")
+    checkout: Optional[bool] = Field(True, description="If True, switch to the new branch after creation")
 
 
 class CreateBranchTool(BaseTool):
     name: str = "git_create_branch"
-    description: str = "Crée une nouvelle branche locale et (optionnel) bascule dessus."
+    description: str = "Create a new local branch and (optionally) checkout to it."
     args_schema: Type[BaseModel] = CreateBranchInput
 
     def _run(self, branch: str, repo_dir: Optional[str] = None, start_point: Optional[str] = None, checkout: Optional[bool] = True) -> str:
@@ -267,7 +273,7 @@ class CreateBranchTool(BaseTool):
         except subprocess.CalledProcessError as e:
             return f"Git error creating branch: {e}"
         except Exception as e:
-            return f"Erreur create branch: {e}"
+            return f"Create branch error: {e}"
 
 
 class CreatePRInput(BaseModel):
@@ -281,7 +287,7 @@ class CreatePRInput(BaseModel):
 
 class CreatePRTool(BaseTool):
     name: str = "create_pr"
-    description: str = "Crée une Pull Request sur GitHub en utilisant la variable d'environnement GITHUB_TOKEN." 
+    description: str = "Create a Pull Request on GitHub using the GITHUB_TOKEN environment variable." 
     args_schema: Type[BaseModel] = CreatePRInput
 
     def _run(self, owner: str, repo: str, head_branch: str, base_branch: Optional[str] = None, title: Optional[str] = None, body: Optional[str] = None) -> str:
@@ -299,56 +305,41 @@ class CreatePRTool(BaseTool):
                 return resp.json().get('html_url', str(resp.json()))
             return f"PR error: {resp.status_code} {resp.text}"
         except Exception as e:
-            return f"Erreur create PR: {e}"
+            return f"Create PR error: {e}"
 
 
 class FetchIssueInput(BaseModel):
-    owner: str = Field(..., description="Owner GitHub du dépôt")
-    repo: str = Field(..., description="Nom du dépôt GitHub")
-    issue_number: Optional[int] = Field(None, description="Numéro de l'issue (facultatif)")
+    owner: str = Field(..., description="GitHub owner of the repository (DjoserKhemSimeu)")
+    repo: str = Field(..., description="Name of the GitHub repository(dummy_agent)")
+    issue_number: Optional[int] = Field(None, description="Issue number (1)")
 
 
 class FetchIssueTool(BaseTool):
     name: str = "fetch_issue"
-    description: str = "Récupère les issues depuis l'API GitHub. Si le dépôt n'a qu'une issue, retourne son contenu JSON."
+    description: str = "Fetches issues from the GitHub API. If the repository has only one issue, returns its JSON content 'body'."
     args_schema: Type[BaseModel] = FetchIssueInput
 
-    def _run(self, owner: str, repo: str, issue_number: Optional[int] = None) -> str:
+    def _run(self, owner: str = "DjoserKhemSimeu", repo: str = "dummy_agent", issue_number: Optional[int] = 1) -> str:
         try:
-            token = os.environ.get('GITHUB_TOKEN')
-            api = f"https://api.github.com/repos/{owner}/{repo}/issues"
-            headers = {"Accept": "application/vnd.github+json"}
-            if token:
-                headers["Authorization"] = f"token {token}"
-            resp = requests.get(api, headers=headers, params={"state": "open"})
-            if resp.status_code != 200:
-                return f"Erreur GitHub API: {resp.status_code} {resp.text}"
-            issues = resp.json()
-            if issue_number:
-                for it in issues:
-                    if it.get('number') == int(issue_number):
-                        return json.dumps(it)
-                return f"Issue #{issue_number} introuvable"
-            # if only one issue present, return it directly
-            if isinstance(issues, list) and len(issues) == 1:
-                return json.dumps(issues[0])
-            # Otherwise return a short summary list
-            summary = [{"number": i.get('number'), "title": i.get('title')} for i in issues]
-            return json.dumps(summary)
+            url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
+            response = requests.get(url)
+            response.raise_for_status()  # lève une erreur si la requête échoue
+            data = response.json()
+            return data.get("body", "")
         except Exception as e:
-            return f"Erreur fetch issue: {e}"
+            return f"Fetch issue error: {e}"
 
 
 class RepoTreeInput(BaseModel):
     owner: str = Field(...)
     repo: str = Field(...)
-    path: Optional[str] = Field(None, description="Chemin relatif à lister (vide = racine)")
-    ref: Optional[str] = Field(None, description="Branch/sha (par défaut: main/master)")
+    path: Optional[str] = Field(None, description="Relative path to list (empty = root)")
+    ref: Optional[str] = Field(None, description="Branch/sha (default: main/master)")
 
 
 class RepoTreeTool(BaseTool):
     name: str = "repo_tree"
-    description: str = "Liste l'arborescence du dépôt via l'API GitHub et peut lire le contenu d'un fichier donné." 
+    description: str = "List the repository tree via the GitHub API and optionally read the content of a given file." 
     args_schema: Type[BaseModel] = RepoTreeInput
 
     def _run(self, owner: str, repo: str, path: Optional[str] = None, ref: Optional[str] = None) -> str:
@@ -369,7 +360,7 @@ class RepoTreeTool(BaseTool):
                 params['ref'] = ref_param
             resp = requests.get(api, headers=headers, params=params)
             if resp.status_code != 200:
-                return f"Erreur GitHub contents API: {resp.status_code} {resp.text}"
+                return f"GitHub contents API error: {resp.status_code} {resp.text}"
             data = resp.json()
             # If it's a list -> directory, else file
             if isinstance(data, list):
@@ -385,21 +376,15 @@ class RepoTreeTool(BaseTool):
                     return decoded
                 return json.dumps(data)
         except Exception as e:
-            return f"Erreur repo tree: {e}"
+            return f"Repo tree error: {e}"
 
 
 # -------------------------
-# Construction des agents et crew avec outils étendus
+# Construction of agents and crew with extended tools
 # -------------------------
 
 # LLM Object from crewai package
-args = parse_args()
-if args.user_id is not None:
-    try:
-        ID = int(args.user_id)
-    except Exception:
-        ID = 0
-HOST=args.host
+
 print(f"Starting Git issue solver with user_id={ID} using model={MODEL} at host={HOST}")
 # Create LLM client. Some versions of the `crewai` package attempt to import
 # native providers (e.g. OpenAI) on instantiation and will raise an
@@ -429,40 +414,41 @@ tests_tool = RunTestsTool()
 commit_tool = GitCommitTool()
 push_tool = GitPushTool()
 pr_tool = CreatePRTool()
+fetchIssue_tool = FetchIssueTool()
 create_branch_tool = CreateBranchTool()
 
 
 agent_goal = (
-    f"Dans le repertoire git@github.com:DjoserKhemSimeu/dummy_agent.git, résoudre l'issue GitHub dummy_agent/issues_file.md "
-    f"en local et proposer des PRs. Context: run by user_id={ID}. Votre environnement local est 'dummy_agent', owner='DjoserKhemSimeu', repo='dummy_agent'. L'erreur est dans 'dummy_agent/issue_file.md'."
+    f"In the repository git@github.com:DjoserKhemSimeu/dummy_agent.git, resolve the GitHub issue number 1 "
+    f"locally and propose PRs. Context: run by user_id={ID}. Local environment 'dummy_agent', owner='DjoserKhemSimeu', repo='dummy_agent'."
 )
 
 agent1 = Agent(
     role="issue-fixer",
     goal=agent_goal,
-    backstory=f"Agent autonome pour diagnostiquer, proposer et appliquer des correctifs sur des dépôts GitHub. (invoked by user {ID})",
+    backstory=f"Autonomous agent to diagnose, propose, and apply fixes on GitHub repositories. (invoked by user {ID})",
     verbose=True,
     memory=True,
-    tools=[clone_tool, create_branch_tool, read_tool, write_tool, tests_tool, commit_tool, push_tool],
+    tools=[clone_tool, create_branch_tool, read_tool, write_tool, tests_tool, commit_tool, push_tool, fetchIssue_tool],
     allow_delegation=True,
     llm=llm,
 )
 
 task1 = Task(
-    description="Fixer l'issue fournie: cloner le repo, diagnostiquer, proposer un patch et créer une PR si les tests passent la pipeline de mise a jour du code doit etre la suivante:" \
-    "1. Cloner le dépôt GitHub localement." \
-    "2. Créer une nouvelle branche pour les modifications." \
-    "3. Analyser l'issue et le code pour identifier la cause racine."\
-    "4. Apporter les modifications nécessaires au code source." \
-    "5. Exécuter la suite de tests pour valider les modifications." \
-    "6. Si les tests passent, committer les changements et pousser la branche vers le dépôt distant.",
-    expected_output="PR ouverte ou diagnostic avec étapes à suivre",
+    description="Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:" \
+    "1. Clone the GitHub repository locally an jump into it." \
+    "2. Create a new branch for the changes." \
+    "3. Analyze the issue and the code to identify the root of the issue." \
+    "4. Make the necessary changes to the source code." \
+    "5. Run the test suite to validate the changes." \
+    "6. If tests pass, commit the changes and push the branch to the remote repository.",
+    expected_output="Report of the actions taken, including the URL of the created branch pushed.",
     agent=agent1,
 )
 
 crew = Crew(
     agents=[agent1],
-    model="ollama/mistral-nemo",
+    model=f"ollama/{MODEL}",
     tasks=[task1],
     cache=True,
     verbose=True,
@@ -473,5 +459,5 @@ crew = Crew(
 
 result = crew.kickoff()
 
-print("\n--- Résultat final ---")
+print("\n--- Final result ---")
 print(result)

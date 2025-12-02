@@ -36,8 +36,25 @@ print_lock = threading.Lock()
 df_prompts = pd.read_csv("data/prompts.csv")
 
 
+
+def load_env_from_directory(env_dir):
+    """Charge toutes les variables d'environnement depuis un fichier .env dans un dossier."""
+    env = {}
+
+    env_file = os.path.join(env_dir, ".env")
+    if os.path.exists(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key, value = line.split("=", 1)
+                    env[key] = value
+
+    return env
+
+
 # --- FONCTION D'UN UTILISATEUR ---
-async def simulate_user(user_id, model, hosts, delta_t_collector):
+async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users):
     """Simule un utilisateur envoyant des requêtes asynchrones à plusieurs instances Ollama."""
     times = []
     delta_ts = []
@@ -64,12 +81,15 @@ async def simulate_user(user_id, model, hosts, delta_t_collector):
             os.makedirs(logs_dir, exist_ok=True)
             out_path = os.path.join(logs_dir, f'user_{user_id}.stdout.log')
             err_path = os.path.join(logs_dir, f'user_{user_id}.stderr.log')
-            cmd = [sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}']
+            agent_env_path = os.path.join('agent_env', f'agent_env_user_{nb_users}_{user_id}')
+
+            os.makedirs(agent_env_path, exist_ok=True)
+            cmd = [ sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}','--n_users', str(nb_users) ]
             if SYNC_ISSUE_SOLVER:
                 # run synchronously for this client but offload blocking call to threadpool
                 out_log = open(out_path, 'a')
                 err_log = open(err_path, 'a')
-                run_call = functools.partial(subprocess.run, cmd, stdout=out_log, stderr=err_log, env=os.environ.copy(), close_fds=True)
+                run_call = functools.partial(subprocess.run, cmd,stdout=out_log, stderr=err_log, env=os.environ.copy(), close_fds=True)
                 loop = asyncio.get_running_loop()
                 log_message(f"[User {user_id}] Running issue solver synchronously (cmd={' '.join(cmd)})")
                 try:
@@ -122,7 +142,7 @@ async def benchmark(config_path, users_list):
         tasks = []
         delta_t_collector = {}
         for u in range(n_users):
-            tasks.append(simulate_user(u, model, hosts, delta_t_collector))
+            tasks.append(simulate_user(u, model, hosts, delta_t_collector,n_users))
 
         all_times_nested = await asyncio.gather(*tasks)
         all_times = [t for sublist in all_times_nested for t in sublist]

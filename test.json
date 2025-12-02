@@ -4,6 +4,7 @@
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
   "Nb_users":[1],
+  "Models":["mistral-nemo"],
   "gpus": {
     "0": {
       "nom": "NVIDIA A100",

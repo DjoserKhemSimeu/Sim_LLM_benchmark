@@ -413,7 +413,8 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
 if __name__ == "__main__":
     gpus, PUE = get_gpu_info_from_env()
     user_counts = json.loads(os.environ.get("BENCH_USERS", "[1,10,100]"))
-    models = ["mistral_7b", "gpt-oss_20b", "gemma3_12b"]
+    models = json.loads(os.environ.get("BENCH_MODELS", '["mistral:7b","gpt-oss:20b","gemma3:12b"]'))
+    
 
     # load inputs
     manuf_df = load_manufacturing_impacts()
@@ -448,6 +449,7 @@ if __name__ == "__main__":
         for model in models:
             for nb_user in user_counts:
                 data = global_impacts[factor][model][nb_user]
+                
                 print(f"[GLOBAL][{factor}] {model} ({nb_user} users) → total: {data['total']:.4g}")
 
     # plots
