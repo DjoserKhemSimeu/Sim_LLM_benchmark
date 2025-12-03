@@ -198,7 +198,7 @@ class GitPushTool(BaseTool):
 
     def _run(self, repo_dir: Optional[str] = None, owner: Optional[str] = None, repo: Optional[str] = None, token_env: Optional[str] = 'GITHUB_TOKEN', force: Optional[bool] = False) -> str:
         try:
-            branch=f'test_{MODEL}_{args.n_users}_{ID}'
+            branch=f'test_{MODEL.replace(":", "-")}_{args.n_users}_{ID}'
             cwd = repo_dir or '.'
             # Ensure branch exists locally
             check = subprocess.run(["git", "rev-parse", "--verify", branch], cwd=cwd, capture_output=True, text=True)

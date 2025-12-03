@@ -70,6 +70,7 @@ To install the dependencies:
 
 ```bash
 pip install -r requirements.txt
+crewai traces disable
 ```
 
 - Define the location of Ollama models 

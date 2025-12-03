@@ -8,3 +8,6 @@ toml
 scikit-learn
 tabulate
 crewai
+bs4
+duckduckgo_search
+litellm
