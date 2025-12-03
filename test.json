@@ -3,20 +3,20 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
-  "Models":["mistral-nemo"],
+  "Nb_users":[1,5,10],
+  "Models":["ministral-3:8b","deepseek-r1:8b","gemma3:4b"],
   "gpus": {
     "0": {
-      "nom": "NVIDIA A100",
-      "die_area": 826,
-      "tdp": 400,
-      "density": 65600000,
-      "tech_node": "7",
-      "type_memoire": "HBM2e",
+      "nom": "NVIDIA RTX 1000",
+      "die_area": 159,
+      "tdp": 35,
+      "density": 118900000,
+      "tech_node": "5",
+      "type_memoire": "GDDR6",
       "taille_memoire": 40,
       "foundry": "TSMC",
-      "date_sortie": "2020",
-      "fu": "Large scale"
+      "date_sortie": "2024",
+      "fu": "Edge"
     }
   }
 }

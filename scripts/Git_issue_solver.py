@@ -27,7 +27,7 @@ if args.user_id is not None:
     except Exception:
         ID = 0
 HOST=args.host
-agent_env_path = os.path.join('agent_env', f'agent_env_user_{args.n_users}_{ID}')
+agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{args.n_users}_{ID}')
 os.chdir(agent_env_path)
 
 class WebSearchInput(BaseModel):
@@ -149,7 +149,17 @@ class RunTestsTool(BaseTool):
             if pytest_args:
                 cmd += pytest_args.split()
             p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
-            return json.dumps({"rc": p.returncode, "stdout": p.stdout, "stderr": p.stderr})
+            result = {
+                        "rc": p.returncode,
+                        "stdout": p.stdout,
+                        "stderr": p.stderr
+                    }
+            output_path = os.path.join(cwd, "pytest_results.json")
+
+            with open(output_path, "w") as f:
+                json.dump(result, f, indent=4)
+
+            return json.dumps(result)
         except FileNotFoundError:
             return json.dumps({"rc": 0, "stdout": "pytest not found; skipped", "stderr": ""})
         except Exception as e:
@@ -188,7 +198,7 @@ class GitPushTool(BaseTool):
 
     def _run(self, repo_dir: Optional[str] = None, owner: Optional[str] = None, repo: Optional[str] = None, token_env: Optional[str] = 'GITHUB_TOKEN', force: Optional[bool] = False) -> str:
         try:
-            branch=f'test_{args.n_users}_{ID}'
+            branch=f'test_{MODEL}_{args.n_users}_{ID}'
             cwd = repo_dir or '.'
             # Ensure branch exists locally
             check = subprocess.run(["git", "rev-parse", "--verify", branch], cwd=cwd, capture_output=True, text=True)

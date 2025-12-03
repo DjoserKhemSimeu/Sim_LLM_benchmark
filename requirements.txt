@@ -7,3 +7,4 @@ openpyxl
 toml
 scikit-learn
 tabulate
+crewai
