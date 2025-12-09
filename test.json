@@ -3,8 +3,9 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1,5,10],
-  "Models":["ministral-3:8b","deepseek-r1:8b","gemma3:4b"],
+  "Nb_users":[1],
+  "Iteration":10,
+  "Models":["gemma3:4b"],
   "gpus": {
     "0": {
       "nom": "NVIDIA RTX 1000",

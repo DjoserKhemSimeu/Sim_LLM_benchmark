@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-  echo "Usage: $0 <nb_users> <model>"
+if [ $# -ne 3 ]; then
+  echo "Usage: $0 <nb_users> <model> <iteration>"
   exit 1
 fi
 
@@ -9,7 +9,7 @@ LOG_DIR="/tmp/save_data"
 PID_DIR="/tmp"
 NB_USER=$1
 MODEL=$2
-
+ITER=$3
 mkdir -p "$LOG_DIR"
 
 # Vérifie si tegrastats est installé
@@ -24,7 +24,7 @@ NUM_GPUS=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 # Fonction pour mesurer la puissance avec tegrastats
 measure_with_tegrastats() {
   local GPU_ID=$1
-  local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}.csv"
+  local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}_${ITER}.csv"
   local OUTFILE="/tmp/tegrastats_out_${GPU_ID}.txt"
   local PID_FILE="$PID_DIR/nv_measure_gpu_${GPU_ID}.pid"
   pkill -f "tegrastats" || true
@@ -61,7 +61,7 @@ measure_with_tegrastats() {
 # Fonction pour mesurer la puissance avec nvidia-smi
 measure_with_nvidia_smi() {
   local GPU_ID=$1
-  local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}.csv"
+  local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}_${ITER}.csv"
   local PID_FILE="$PID_DIR/nv_measure_gpu_${GPU_ID}.pid"
 
   echo "timestamp,gpu_power" >"$LOG_FILE"

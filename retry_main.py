@@ -15,7 +15,7 @@ MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
 EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
 EVALUATION_SCRIPT_MTC = "measure/scripts/perf_show_mtc.py"
 MODELS = ["mistral:7b", "gpt-oss:20b", "gemma3:12b"]
-
+os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + os.pathsep + "."
 
 def main():
     parser = argparse.ArgumentParser(

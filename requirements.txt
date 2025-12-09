@@ -7,7 +7,7 @@ openpyxl
 toml
 scikit-learn
 tabulate
-crewai
+crewai==1.6.0
 bs4
 duckduckgo_search
 litellm

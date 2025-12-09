@@ -2,6 +2,7 @@
 import os
 import json
 import csv
+import re
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ import seaborn as sns
 
 # Constants
 seven_years = 61320 * 3600  # seconds in 7 years (~61320 hours?) keep same as perf_show
-
+ITERATION = int(os.environ.get("BENCH_ITERATION", 10))
 # --- Helpers to load inputs ---
 
 def get_gpu_info_from_env():
@@ -58,6 +59,77 @@ def load_electricity_impacts(path="data/Electricity_impacts.csv", factors=["GWP"
     # Return only requested factors with fallback 0
     return {f: mapping.get(f, 0.0) for f in factors}
 
+def load_sucess_rates():
+    BASE_DIR = "agent_env"
+
+    # Regex pour extraire le pourcentage dans stdout
+    percent_pattern = re.compile(r"\[(\d+)%\]")
+
+    # Regex pour extraire model, nb_users, id depuis le nom du dossier
+    folder_pattern = re.compile(r"agent_env_user_(.+)_(\d+)_(\d+)_(\d+)")
+
+    rows = []
+
+    for folder in os.listdir(BASE_DIR):
+        folder_path = os.path.join(BASE_DIR, folder)
+
+        if not os.path.isdir(folder_path):
+            continue
+
+        match = folder_pattern.match(folder)
+        if not match:
+            continue
+
+        model, nb_users,agent_id, run_id = match.groups()
+        nb_users = int(nb_users)
+        agent_id = int(agent_id)
+        run_id = int(run_id)
+
+        # Chemin du fichier JSON
+        json_file = os.path.join(folder_path, "dummy_agent", "pytest_results.json")
+
+        # -------------------------------
+        #  CAS 1 : fichier présent → lire
+        #  CAS 2 : pas de fichier → percent = 0
+        # -------------------------------
+        if os.path.isfile(json_file):
+            with open(json_file, "r") as f:
+                data = json.load(f)
+
+            stdout = data.get("stdout", "")
+            percent_match = percent_pattern.search(stdout)
+
+            percent = int(percent_match.group(1)) if percent_match else 0
+        else:
+            # Aucun fichier → échec complet
+            percent = 0
+
+        rows.append({
+            "model": model,
+            "nb_users": nb_users,
+            "agent_id": agent_id,
+            "run_id": run_id,
+            "percent": percent
+        })
+
+    # DataFrame complet
+    df = pd.DataFrame(rows)
+
+    # ----------------------------------------
+    #     REGROUPEMENT PAR MODEL / NB_USERS
+    # ----------------------------------------
+    df_grouped = (
+        df.groupby(["model", "nb_users"])["percent"]
+        .mean()
+        .reset_index()
+        .rename(columns={"percent": "mean_success_percent"})
+    )
+
+    print("\n=== Pourcentage moyen de réussite par modèle & nb_users ===")
+    print(df_grouped)
+    return df_grouped
+# Export optionnel
+# df_grouped.to_csv("pytest_grouped_results.csv", index=False)
 
 # --- Energy computation helpers (copied from perf_show) ---
 
@@ -108,15 +180,61 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
     for gpu_id in gpus:
         for model in models:
             for nb_user in user_counts:
-                file_path = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
-                if os.path.isfile(file_path):
-                    data = pd.read_csv(file_path)
-                    if not data.empty:
-                        power_profiles[gpu_id][model][nb_user] = data
-                    else:
-                        print(f"⚠️ Fichier vide : {file_path}")
-                else:
-                    print(f"⚠️ Fichier introuvable : {file_path}")
+                # Try to gather ITERATION files named with an iteration suffix.
+                series_list = []
+                found_any = False
+                for it in range(ITERATION):
+                    file_path_iter = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}_{it}.csv"
+                    if os.path.isfile(file_path_iter):
+                        try:
+                            df = pd.read_csv(file_path_iter)
+                            if df.empty:
+                                print(f"Warning: empty file {file_path_iter}")
+                                continue
+                            if "timestamp" not in df.columns or "gpu_power" not in df.columns:
+                                print(f"Warning: expected columns missing in {file_path_iter}")
+                                continue
+                            s = df.set_index("timestamp")["gpu_power"].astype(float)
+                            s.name = f"iter_{it}"
+                            series_list.append(s)
+                            found_any = True
+                        except Exception as e:
+                            print(f"Warning: failed to read {file_path_iter}: {e}")
+
+                # Fallback: if no iter files found, try the old single-file name
+                if not found_any:
+                    file_path = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
+                    if os.path.isfile(file_path):
+                        try:
+                            df = pd.read_csv(file_path)
+                            if df.empty:
+                                print(f"Warning: empty file {file_path}")
+                            elif "timestamp" in df.columns and "gpu_power" in df.columns:
+                                s = df.set_index("timestamp")["gpu_power"].astype(float)
+                                s.name = "iter_0"
+                                series_list.append(s)
+                                found_any = True
+                            else:
+                                print(f"Warning: expected columns missing in {file_path}")
+                        except Exception as e:
+                            print(f"Warning: failed to read {file_path}: {e}")
+
+                if not found_any:
+                    print(f"Warning: no power profile files found for gpu={gpu_id}, model={model}, users={nb_user}")
+                    continue
+
+                # Concatenate all iteration series on timestamp index and compute mean across iterations
+                try:
+                    df_concat = pd.concat(series_list, axis=1, join="outer")
+                    # compute mean across iterations (skip NaN)
+                    df_mean = df_concat.mean(axis=1, skipna=True).reset_index()
+                    df_mean.columns = ["timestamp", "gpu_power"]
+                    # sort by timestamp
+                    df_mean = df_mean.sort_values("timestamp").reset_index(drop=True)
+                    power_profiles[gpu_id][model][nb_user] = df_mean
+                except Exception as e:
+                    print(f"Warning: failed to aggregate iterations for gpu={gpu_id}, model={model}, users={nb_user}: {e}")
+
     return power_profiles
 
 def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=None):
@@ -307,7 +425,7 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
     """
     if models is None:
         models = list(next(iter(global_impacts.values())).keys())
-
+    df_sucess = load_sucess_rates()
     # Use explicit unit conversions and labels requested by user
     # Scale values for display: GWP kg -> g ; ADPe kg -> mg ; WU m^3 -> L
     scale_map = {factors[0]: 1000.0, factors[1]: 1e6, factors[2]: 1000.0}
@@ -348,6 +466,8 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
         group_start = user_idx * (n_models * group_spacing)
         for model_idx, model in enumerate(models):
             base_x = group_start + model_idx * group_spacing
+            # We'll record GWP (primary axis) display value per slot to position success annotations
+            gwp_disp_for_slot = 0.0
             for factor in factors:
                 ax = axis_map[factor]
                 offset = factor_offsets[factor]
@@ -358,6 +478,8 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
                     val = 0.0
                 # scale to requested display unit
                 val_disp = val * scale_map.get(factor, 1.0)
+                if factor == factors[0]:
+                    gwp_disp_for_slot = val_disp
                 ax.bar(
                     x_pos,
                     val_disp,
@@ -372,6 +494,30 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
             # only once per model slot, collect for xticks
             x_positions.append(base_x)
             x_labels.append(f"{model}\n({nb_user})")
+            # lookup mean success percent for this (model, nb_user) from df_sucess
+            percent = 0
+            try:
+                if df_sucess is not None and not df_sucess.empty:
+                    row = df_sucess[(df_sucess['model'] == model) & (df_sucess['nb_users'] == nb_user)]
+                    if not row.empty:
+                        # some aggregated results may name the percent column differently
+                        if 'mean_success_percent' in row.columns:
+                            percent = float(row['mean_success_percent'].iloc[0])
+                        elif 'percent' in row.columns:
+                            percent = float(row['percent'].iloc[0])
+                        else:
+                            # fallback: try 'mean' or first numeric column
+                            for c in row.columns:
+                                if pd.api.types.is_numeric_dtype(row[c]):
+                                    percent = float(row[c].iloc[0])
+                                    break
+            except Exception:
+                percent = 0
+
+            # store annotation info on primary axis (GWP)
+            if 'success_annotations' not in locals():
+                success_annotations = []
+            success_annotations.append((base_x, gwp_disp_for_slot, percent))
 
         # draw separator after each user group (except last)
         if user_idx < n_users - 1:
@@ -389,6 +535,18 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
     ax_wu.set_ylabel(f"{factors[2]} ({unit_labels.get(factors[2], '')})")
 
     ax_gwp.set_title("Global impact consolidated - GWP / ADPe / WU")
+
+    # Place success percentage annotations above each model slot on the primary axis
+    try:
+        ylim = ax_gwp.get_ylim()
+        y_offset = 0.02 * (ylim[1] - ylim[0])
+        for x_pos, gwp_val, percent in success_annotations:
+            y = gwp_val + y_offset
+            color = 'green' if percent > 50 else 'red'
+            ax_gwp.text(x_pos, y, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
+    except Exception:
+        # if any issue placing annotations, continue without crashing
+        pass
 
     # Create legends for models and factors
     import matplotlib.patches as mpatches

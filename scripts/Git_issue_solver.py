@@ -18,6 +18,7 @@ def parse_args():
     p.add_argument('--user-id', type=int, default=None, help='Optional user id to associate with this run')
     p.add_argument('--host', type=str, default="http://localhost:11432", help='Host where the LLM server is running')
     p.add_argument('--n_users', type=int, default=1, help='Number of users in the benchmark (for logging purposes)')
+    p.add_argument('--iter', type=int, default=0, help='Iteration number in the benchmark')
     return p.parse_args()
 
 args = parse_args()
@@ -27,7 +28,8 @@ if args.user_id is not None:
     except Exception:
         ID = 0
 HOST=args.host
-agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{args.n_users}_{ID}')
+ITER=args.iter
+agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{args.n_users}_{ID}_{ITER}')
 os.chdir(agent_env_path)
 
 class WebSearchInput(BaseModel):

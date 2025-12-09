@@ -31,6 +31,7 @@ import functools
 T = 2  # Durée du benchmark (en secondes)
 lamb = 2  # Taux moyen d'arrivée (req/s)
 Max = 1  # Nb max de requêtes par utilisateur
+N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 print_lock = threading.Lock()
 df_prompts = pd.read_csv("data/prompts.csv")
@@ -54,7 +55,7 @@ def load_env_from_directory(env_dir):
 
 
 # --- FONCTION D'UN UTILISATEUR ---
-async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users):
+async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users,n):
     """Simule un utilisateur envoyant des requêtes asynchrones à plusieurs instances Ollama."""
     times = []
     delta_ts = []
@@ -79,12 +80,12 @@ async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users):
         try:
             logs_dir = os.path.join('logs', 'issue_solver')
             os.makedirs(logs_dir, exist_ok=True)
-            out_path = os.path.join(logs_dir, f'user_{user_id}.stdout.log')
-            err_path = os.path.join(logs_dir, f'user_{user_id}.stderr.log')
-            agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{nb_users}_{user_id}')
+            out_path = os.path.join(logs_dir, f'user_{model}_{user_id}_{n}.stdout.log')
+            err_path = os.path.join(logs_dir, f'user_{model}_{user_id}_{n}.stderr.log')
+            agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{nb_users}_{user_id}_{n}')
 
             os.makedirs(agent_env_path, exist_ok=True)
-            cmd = [ sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}','--n_users', str(nb_users) ]
+            cmd = [ sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}','--n_users', str(nb_users), '--iter', str(n) ]
             if SYNC_ISSUE_SOLVER:
                 # run synchronously for this client but offload blocking call to threadpool
                 out_log = open(out_path, 'a')
@@ -136,23 +137,30 @@ async def benchmark(config_path, users_list):
     delta_t_data = {}
 
     for n_users in users_list:
-        log_message(f"\n=== Benchmark avec {n_users} utilisateurs ===")
-        run_back_bash_script("measure/scripts/script_start_tx.sh", str(n_users), MODEL)
+    
+        save_times = {}
+        save_delta_t = {}
+        for i in range(N):
 
-        tasks = []
-        delta_t_collector = {}
-        for u in range(n_users):
-            tasks.append(simulate_user(u, model, hosts, delta_t_collector,n_users))
+            log_message(f"\n=== Benchmark avec {n_users} utilisateurs for iteration {i} ===")
+            run_back_bash_script("measure/scripts/script_start_tx.sh", str(n_users), MODEL, str(i))
 
-        all_times_nested = await asyncio.gather(*tasks)
-        all_times = [t for sublist in all_times_nested for t in sublist]
+            tasks = []
+            delta_t_collector = {}
+            for u in range(n_users):
+                tasks.append(simulate_user(u, model, hosts, delta_t_collector,n_users,i))
 
-        run_back_bash_script("measure/scripts/script_stop_tx.sh")
+            all_times_nested = await asyncio.gather(*tasks)
+            all_times = [t for sublist in all_times_nested for t in sublist]
 
-        results[n_users] = all_times
-        delta_t_data[n_users] = [
-            dt for user in delta_t_collector for dt in delta_t_collector[user]
-        ]
+            run_back_bash_script("measure/scripts/script_stop_tx.sh")
+            save_times[i] = all_times
+            save_delta_t[i] = [
+                dt for user in delta_t_collector for dt in delta_t_collector[user]
+            ]
+
+        results[n_users] = save_times
+        delta_t_data[n_users] = save_delta_t
 
         log_message(f"Completed {n_users} users, total requests: {len(all_times)}")
         await asyncio.sleep(5)
@@ -162,13 +170,43 @@ async def benchmark(config_path, users_list):
 
 # --- VISUALISATION ---
 def plot_latency_and_efficiency(results):
+    # `results` can be either:
+    # - {nb_users: [latency_list]} (old format)
+    # - {nb_users: {iteration: [latency_list], ...}} (new format)
     users = sorted(results.keys())
-    latencies = [results[u] for u in users]
-    avg_latencies = [np.mean(lats) for lats in latencies]
-    avg_req_user = [len(lats) / users[i] for i, lats in enumerate(latencies)]
 
-    # Calcul de M = (lamb * nb_users) / latence_moyenne
-    M = [(lamb * u) / avg_latencies[i] for i, u in enumerate(users)]
+    def flatten_times(item):
+        # item may be a list of latencies or a dict of iterations -> lists
+        if isinstance(item, dict):
+            all_times = []
+            for v in item.values():
+                if isinstance(v, list):
+                    all_times.extend(v)
+                elif isinstance(v, (int, float)):
+                    all_times.append(v)
+            return all_times
+        elif isinstance(item, list):
+            return item
+        else:
+            return []
+
+    latencies_lists = [flatten_times(results[u]) for u in users]
+    # For plotting/aggregation, replace empty lists with [np.nan] so matplotlib
+    # can accept the dataset while keeping the slot for that user count.
+    latencies_for_plot = [l if len(l) > 0 else [np.nan] for l in latencies_lists]
+
+    # Average latency per user-count (mean over all iterations and observations)
+    avg_latencies = [float(np.nanmean(l)) if len(l) > 0 else float('nan') for l in latencies_lists]
+    avg_req_user = [ (len([x for x in l if not (isinstance(x, float) and np.isnan(x))]) / users[i]) if users[i] > 0 else 0 for i, l in enumerate(latencies_lists) ]
+
+    # Calcul de M = (lamb * nb_users) / latence_moyenne (guard against div-by-zero/nan)
+    M = []
+    for i, u in enumerate(users):
+        avg = avg_latencies[i]
+        if np.isnan(avg) or avg == 0:
+            M.append(0.0)
+        else:
+            M.append((lamb * u) / avg)
 
     # --- Enregistrement des données dans un fichier CSV ---
     # Création d'un DataFrame pour les latences et M
@@ -190,7 +228,7 @@ def plot_latency_and_efficiency(results):
     df.to_csv(csv_path, index=False)
     print(f"Données enregistrées sous {csv_path}")
     raw_data = []
-    for u, lats in zip(users, latencies):
+    for u, lats in zip(users, latencies_lists):
         for lat in lats:
             raw_data.append({"nb_users": u, "latency": lat})
 
@@ -205,7 +243,7 @@ def plot_latency_and_efficiency(results):
     # Graphique 1 : Boxplot de la latence
     positions = np.arange(len(users))
     bp = ax1.boxplot(
-        latencies, positions=positions, widths=0.6, patch_artist=True, showfliers=False
+        latencies_for_plot, positions=positions, widths=0.6, patch_artist=True, showfliers=False
     )
     colors = plt.cm.viridis(np.linspace(0, 1, len(users)))
     for patch, color in zip(bp["boxes"], colors):
