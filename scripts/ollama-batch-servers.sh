@@ -28,13 +28,14 @@ mkdir -p "$LOG_DIR"
 # Start server instances
 for ((i = 0; i < NUM_GPUS; i++)); do
   PORT=$((BASE_PORT + i))
-  LOG_FILE="${LOG_DIR}/${PORT}.log"
+  LOG_FILE="${LOG_DIR}/${PORT}_${MODEL}.log"
 
   # Environment variables
   export OLLAMA_LOAD_TIMEOUT="120m"
   export OLLAMA_KEEP_ALIVE="120m"
   export OLLAMA_NUM_PARALLEL="16"
   export OLLAMA_HOST="${HOST}:${PORT}"
+  export OLLAMA_DEBUG=2
   export CUDA_VISIBLE_DEVICES="$i"
 
   # Start server with nohup and log output

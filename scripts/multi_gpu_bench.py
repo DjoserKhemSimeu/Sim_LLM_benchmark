@@ -80,8 +80,8 @@ async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users,n):
         try:
             logs_dir = os.path.join('logs', 'issue_solver')
             os.makedirs(logs_dir, exist_ok=True)
-            out_path = os.path.join(logs_dir, f'user_{model}_{user_id}_{n}.stdout.log')
-            err_path = os.path.join(logs_dir, f'user_{model}_{user_id}_{n}.stderr.log')
+            out_path = os.path.join(logs_dir, f'user_{model}_{nb_users}_{user_id}_{n}.stdout.log')
+            err_path = os.path.join(logs_dir, f'user_{model}_{nb_users}_{user_id}_{n}.stderr.log')
             agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{nb_users}_{user_id}_{n}')
 
             os.makedirs(agent_env_path, exist_ok=True)
