@@ -39,7 +39,15 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 ---
 
 ## Prerequisites
+ 
+- SSH key generation :
+```bash
+ssh-keygen -t ed25519 -C "ton_email@example.com"
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
 
+```
 - Python **3.8** or higher  
 - **Ollama** installed and configured  
 ```bash
