@@ -39,7 +39,10 @@ The benchmark follows an **automated pipeline** to evaluate GPU infrastructures:
 ---
 
 ## Prerequisites
- 
+- Clone 
+```bash
+git clone --branch CtG-MtC-Agentic-IssueSolver --single-branch https://github.com/DjoserKhemSimeu/Sim_LLM_benchmark.git
+```
 - SSH key generation :
 ```bash
 ssh-keygen -t ed25519 -C "ton_email@example.com"
@@ -153,6 +156,44 @@ The benchmark requires a JSON configuration file defining the computing infrastr
 | `fu`                   | *Factor Usage*: `"Large scale"` for data center GPUs, `"Edge"` for embedded/edge devices. |
 
 ---
+
+## JSON Configuration Schema (processed by `configs/config.py`)
+
+`configs/config.py` lit le fichier JSON principal et en dérive les variables d'environnement
+utilisées par le reste des scripts. Le fichier JSON doit être un objet contenant, au minimum,
+les champs suivants (les noms sont sensibles à la casse) :
+
+- **Champs top-level requis :**
+  - `PUE` (nombre) : Power Usage Effectiveness (ex. `1.5`).
+  - `MANUFACTURE_DATA` (string) : identifiant du jeu de données de fabrication (ex. `more-than-carbon`).
+  - `Nb_users` (tableau de nombres) : liste des nombres d'utilisateurs simultanés à tester (ex. `[1,10,100]`).
+  - `Models` (tableau de strings) : liste des modèles à tester (identifiants compatibles Ollama), ex. `["mistral:7b"]`.
+  - `gpus` (objet) : dictionnaire décrivant chaque GPU ; les clés sont des indices string (`"0"`, `"1"`, ...).
+
+- **Champs par GPU (dans chaque objet `gpus["<id>"]`) :**
+  - `nom` (string) : nom du GPU.
+  - `die_area` (nombre) : surface du die en mm².
+  - `tdp` (nombre) : TDP en watts.
+  - `density` (nombre) : densité utilisée par certains scripts (ex. mémoire).
+  - `tech_node` (string) : technologie du nœud (nm).
+  - `type_memoire` (string) : type de mémoire (ex. `HBM2e`).
+  - `taille_memoire` (nombre) : taille mémoire en GB.
+  - `foundry` (string) : fondeur (ex. `TSMC`).
+  - `date_sortie` (string) : année de sortie.
+  - `fu` (string) : usage factor (`Large scale` / `Edge`).
+
+- **Champs optionnels :**
+  - `Iteration` (nombre) : nombre d'itérations par test (par défaut `10` si absent).
+
+Comportement de `configs/config.py` :
+- Charge le JSON et définit des variables d'environnement préfixées `BENCH_` (ex. `BENCH_PUE`, `BENCH_USERS`, `BENCH_MODELS`).
+- Pour chaque GPU, il crée des variables individuelles (`BENCH_GPU_<id>_NAME`, `BENCH_GPU_<id>_DIE_AREA`, ...).
+- Génère `configs/config.toml` contenant la configuration des instances Ollama (une instance par GPU disponible) et lance
+  `scripts/ollama-batch-servers.sh` pour démarrer les serveurs.
+
+Si des champs requis manquent ou sont mal nommés, `configs/config.py` lèvera une erreur ; adaptez-le si vous
+modifiez la structure du JSON.
+
 
 ## Compatibility
 
