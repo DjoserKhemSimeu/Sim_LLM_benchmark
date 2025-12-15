@@ -75,7 +75,7 @@ class WebSearchTool(BaseTool):
 
 
 class CloneRepoInput(BaseModel):
-    repo_url: str = Field(..., description="SSH URL of the GitHub repository to clone")
+    repo_url: str = Field(..., description="SSH of the GitHub repository to clone")
    
 
 class CloneRepoTool(BaseTool):
@@ -84,6 +84,8 @@ class CloneRepoTool(BaseTool):
     args_schema: Type[BaseModel] =CloneRepoInput
 
     def _run(self, repo_url: str) -> str:
+        if repo_url.startswith("http://") or repo_url.startswith("https://"):
+            return "Please use the SSH URL for cloning"
         try:
           
             # run git clone
