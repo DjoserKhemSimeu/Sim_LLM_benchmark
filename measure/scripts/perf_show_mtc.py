@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import subprocess
+import importlib.util
 # Constants
 seven_years = 61320 * 3600  # seconds in 7 years (~61320 hours?) keep same as perf_show
+three_years = 26298 * 3600
 ITERATION = int(os.environ.get("BENCH_ITERATION", 10))
 # --- Helpers to load inputs ---
 
@@ -59,7 +61,95 @@ def load_electricity_impacts(path="data/Electricity_impacts.csv", factors=["GWP"
     # Return only requested factors with fallback 0
     return {f: mapping.get(f, 0.0) for f in factors}
 
+
 def load_sucess_rates():
+    # If a precomputed grouped results CSV exists, use it to avoid rescanning files
+    cached_group = Path("measure/data/pytest_grouped_results.csv")
+    if cached_group.exists():
+        try:
+            df_grouped = pd.read_csv(cached_group)
+            # ensure nb_users is integer when possible
+            if "nb_users" in df_grouped.columns:
+                try:
+                    df_grouped["nb_users"] = df_grouped["nb_users"].astype(int)
+                except Exception:
+                    pass
+            print(f"Using cached grouped results from {cached_group}")
+            return df_grouped
+        except Exception as e:
+            print(f"Failed to read cached grouped results {cached_group}: {e}. Recomputing...")
+
+    BASE_DIR = "agent_env"
+    folder_pattern = re.compile(r"agent_env_user_(.+)_(\d+)_(\d+)_(\d+)")
+
+    rows = []
+
+    for folder in os.listdir(BASE_DIR):
+        folder_path = os.path.join(BASE_DIR, folder)
+
+        if not os.path.isdir(folder_path):
+            continue
+
+        match = folder_pattern.match(folder)
+        if not match:
+            continue
+
+        model, nb_users, agent_id, run_id = match.groups()
+        nb_users = int(nb_users)
+        agent_id = int(agent_id)
+        run_id = int(run_id)
+
+        # Chemin vers app.py
+        app_file = os.path.join(folder_path, "dummy_agent", "app.py")
+
+        # Cas 1 : app.py existe → tester la fonction addition()
+        if os.path.isfile(app_file):
+            try:
+                # Charger dynamiquement le module
+                spec = importlib.util.spec_from_file_location("app_module", app_file)
+                app_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(app_module)
+
+                # Tester la fonction addition()
+                result = app_module.addition(2, 3)  # Test avec 2 + 3 = 5
+                if result == 5:
+                    percent = 100  # Succès
+                else:
+                    percent = 0     # Échec
+            except Exception as e:
+                print(f"Erreur lors de l'exécution de {app_file}: {e}")
+                percent = 0
+        else:
+            percent = 0
+
+        rows.append({
+            "model": model,
+            "nb_users": nb_users,
+            "agent_id": agent_id,
+            "run_id": run_id,
+            "percent": percent
+        })
+
+    # DataFrame complet
+    df = pd.DataFrame(rows)
+
+    # Regroupement par modèle et nb_users
+    df_grouped = (
+        df.groupby(["model", "nb_users"])["percent"]
+        .mean()
+        .reset_index()
+        .rename(columns={"percent": "mean_success_percent"})
+    )
+
+    print("\n=== Pourcentage moyen de réussite par modèle & nb_users ===")
+    print(df_grouped)
+    df_grouped.to_csv("measure/data/pytest_grouped_results.csv", index=False)
+    df.to_csv("measure/data/pytest_raw_results.csv", index=False)
+
+    return df_grouped
+
+
+def load_sucess_rates_old():
     BASE_DIR = "agent_env"
 
     # Regex pour extraire le pourcentage dans stdout
@@ -124,12 +214,13 @@ def load_sucess_rates():
         .reset_index()
         .rename(columns={"percent": "mean_success_percent"})
     )
-
+    
     print("\n=== Pourcentage moyen de réussite par modèle & nb_users ===")
     print(df_grouped)
+    df_grouped.to_csv("measure/data/pytest_grouped_results.csv", index=False)
+    df.to_csv("measure/data/pytest_raw_results.csv", index=False)
+
     return df_grouped
-# Export optionnel
-# df_grouped.to_csv("pytest_grouped_results.csv", index=False)
 
 # --- Energy computation helpers (copied from perf_show) ---
 
@@ -161,7 +252,7 @@ def compute_impact_mtc(energy_kWh, manuf_row, electricity_factors, PUE, duration
                 manuf_value = float(manuf_row.get(factor, 0.0))
             except Exception:
                 manuf_value = 0.0
-        soft_manuf = (duration / seven_years) * manuf_value
+        soft_manuf = (duration / three_years) * manuf_value
         total = usage + soft_manuf
         results[factor] = {
             "total": total,
@@ -194,6 +285,9 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
                             if "timestamp" not in df.columns or "gpu_power" not in df.columns:
                                 print(f"Warning: expected columns missing in {file_path_iter}")
                                 continue
+                            # Ensure timestamps are numeric and rows are sorted
+                            df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
+                            df = df.dropna(subset=["timestamp", "gpu_power"]).sort_values("timestamp")
                             s = df.set_index("timestamp")["gpu_power"].astype(float)
                             s.name = f"iter_{it}"
                             series_list.append(s)
@@ -210,6 +304,8 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
                             if df.empty:
                                 print(f"Warning: empty file {file_path}")
                             elif "timestamp" in df.columns and "gpu_power" in df.columns:
+                                df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
+                                df = df.dropna(subset=["timestamp", "gpu_power"]).sort_values("timestamp")
                                 s = df.set_index("timestamp")["gpu_power"].astype(float)
                                 s.name = "iter_0"
                                 series_list.append(s)
@@ -225,7 +321,19 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
 
                 # Concatenate all iteration series on timestamp index and compute mean across iterations
                 try:
-                    df_concat = pd.concat(series_list, axis=1, join="outer")
+                    # Build a common timestamp index (union of all timestamps)
+                    union_idx = np.unique(np.concatenate([s.index.values for s in series_list]))
+
+                    # Reindex and interpolate each iteration on the union index
+                    reindexed = []
+                    for s in series_list:
+                        s2 = s.reindex(union_idx)
+                        # linear interpolate, allow filling at boundaries
+                        s2 = s2.interpolate(method="linear", limit_direction="both")
+                        reindexed.append(s2)
+
+                    df_concat = pd.concat(reindexed, axis=1, join="outer")
+                    print(df_concat.head())
                     # compute mean across iterations (skip NaN)
                     df_mean = df_concat.mean(axis=1, skipna=True).reset_index()
                     df_mean.columns = ["timestamp", "gpu_power"]
@@ -542,7 +650,7 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
         y_offset = 0.02 * (ylim[1] - ylim[0])
         for x_pos, gwp_val, percent in success_annotations:
             y = gwp_val + y_offset
-            color = 'green' if percent > 50 else 'red'
+            color = 'green' if percent > 49 else 'red'
             ax_gwp.text(x_pos, y, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
     except Exception:
         # if any issue placing annotations, continue without crashing

@@ -81,9 +81,10 @@ def calculate_proportionality_factor(gpu, ref=A100_REF):
     # 2. Calcul du Facteur F_GPU_chip
     # F_GPU_chip ∝ γ(proc_die_area × proc_density) + (mem_size × mem_density) / mem_tech_node
 
-    term1_chip = g1 * ((gpu["die_area"] * gpu["density"]) / (ref["die_area"] * ref["density"])) # Normalisation par rapport à l'A100
-    term2_chip = g2 * (gpu["mem_size"] / ref["mem_size"]) # Normalisation par rapport à l'A100
-    F_GPU_chip = term1_chip + term2_chip
+    term1_chip = (gpu["die_area"] /ref["die_area"]) # Normalisation par rapport à l'A100
+    term2_chip =  (gpu["mem_size"] / ref["mem_size"]) # Normalisation par rapport à l'A100
+    term3_chip =(gpu["density"] / ref["density"])  # Normalisation par rapport à l'A100
+    F_GPU_chip = (term1_chip + term2_chip+term3_chip)/3
 
     # 3. Calcul du Facteur F_heatsink
     # F_heatsink ∝ GPU_TDP
