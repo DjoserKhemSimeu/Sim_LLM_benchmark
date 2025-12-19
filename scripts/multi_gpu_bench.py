@@ -18,6 +18,8 @@ from datetime import datetime
 from ollama import AsyncClient
 from utils.utils_file import log_message, run_back_bash_script
 import threading
+import importlib
+import json
 
 # Globals to track issue solver subprocesses and handles
 ISSUE_SOLVER_PROCS = []
@@ -298,5 +300,51 @@ if __name__ == "__main__":
         results, delta_t = asyncio.run(benchmark(args.config, users_list))
         plot_latency_and_efficiency(results)
         log_message("Benchmark terminé avec succès.")
+        # After benchmark: parse Ollama server logs for each host and save parsed JSONL
+        try:
+            # load parse_ollama_log module from local scripts (same directory)
+            try:
+                import parse_ollama_log
+            except Exception:
+                # fallback: import by path
+                spec = importlib.util.spec_from_file_location("parse_ollama_log", os.path.join(os.path.dirname(__file__), "parse_ollama_log.py"))
+                parse_ollama_log = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(parse_ollama_log)
+
+            # reload config to get hosts and model
+            cfg = toml.load(args.config)
+            model = cfg.get("model", "mistral:7b")
+            instances = cfg.get("ollama_instances", {})
+            hosts = list(instances.keys())
+            LOG_DIR = "ollama-server-logs"
+            parsed_out_dir = os.path.join("logs", "parsed")
+            os.makedirs(parsed_out_dir, exist_ok=True)
+
+            for host in hosts:
+                # construct expected log path: ${LOG_DIR}/${PORT}_${MODEL}.log
+                # Hosts may be like '127.0.0.1:53100', 'localhost:53100' or include scheme 'http://127.0.0.1:53100'.
+                try:
+                    h = host
+                    # strip scheme if present
+                    if h.startswith("http://") or h.startswith("https://"):
+                        h = h.split("//", 1)[1]
+                    port = h.split(":")[-1]
+                except Exception:
+                    port = host.replace(":", "_")
+                log_path = os.path.join(LOG_DIR, f"{port}_{model}.log")
+                if os.path.exists(log_path):
+                    try:
+                        items = parse_ollama_log.parse_log(log_path)
+                        out_path = os.path.join(parsed_out_dir, f"parsed_{port}_{model}.jsonl")
+                        with open(out_path, "w", encoding="utf-8") as outf:
+                            for it in items:
+                                outf.write(json.dumps(it, ensure_ascii=False) + "\n")
+                        log_message(f"Parsed {log_path} -> {out_path} ({len(items)} items)")
+                    except Exception as e:
+                        log_message(f"Failed parsing {log_path}: {e}")
+                else:
+                    log_message(f"Log file not found: {log_path}")
+        except Exception as e:
+            log_message(f"Post-benchmark parsing failed: {e}")
     except KeyboardInterrupt:
         log_message("Interrompu par l’utilisateur.")

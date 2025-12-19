@@ -675,6 +675,147 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
     plt.close()
 
 
+# --- Latency plotting (boxplots) ---
+def load_raw_latencies(models, user_counts, data_dir="measure/data"):
+    """Load raw latency CSVs named raw_latencies_{model}.csv and return
+    a dict keyed by (model, nb_user) -> list of latencies.
+    """
+    raw = {}
+    for model in models:
+        # try direct filename, fall back to replacing ':' with '_'
+        fname = os.path.join(data_dir, f"raw_latencies_{model}.csv")
+        if not os.path.exists(fname):
+            alt = model.replace(":", "_")
+            fname2 = os.path.join(data_dir, f"raw_latencies_{alt}.csv")
+            if os.path.exists(fname2):
+                fname = fname2
+            else:
+                # file not found, skip this model
+                print(f"Warning: latency file not found for model '{model}' (tried {fname} and {fname2})")
+                continue
+
+        try:
+            df = pd.read_csv(fname)
+        except Exception as e:
+            print(f"Warning: failed to read {fname}: {e}")
+            continue
+
+        # expect columns nb_users, latency
+        for nb in user_counts:
+            if 'nb_users' in df.columns and 'latency' in df.columns:
+                lat = df[df['nb_users'] == nb]['latency'].dropna().astype(float).tolist()
+            else:
+                # try first two columns as fallback
+                try:
+                    lat = df.iloc[:, 1].dropna().astype(float).tolist()
+                except Exception:
+                    lat = []
+
+            raw[(model, nb)] = lat
+
+    return raw
+
+
+def plot_latency_boxplots(raw_latencies, models, user_counts=[1, 10, 100], outdir="images/impact_plots"):
+    """Plot grouped boxplots of latencies ordered like the combined impact plot.
+    Groups are by `user_counts`, inner order is `models`.
+    """
+    # Prepare plotting positions to match combined layout
+    n_models = len(models)
+    n_users = len(user_counts)
+    group_spacing = 1.5
+    box_width = 0.6
+
+    positions = []
+    labels = []
+    data = []
+    slot_keys = []
+    for user_idx, nb_user in enumerate(user_counts):
+        group_start = user_idx * (n_models * group_spacing)
+        for model_idx, model in enumerate(models):
+            x_pos = group_start + model_idx * group_spacing
+            positions.append(x_pos)
+            labels.append(f"{model}\n({nb_user})")
+            lat_list = raw_latencies.get((model, nb_user), [])
+            slot_keys.append((model, nb_user))
+            data.append(lat_list if len(lat_list) > 0 else [np.nan])
+
+    if not any([len([v for v in d if not np.isnan(v)]) > 0 for d in data]):
+        print("No latency data found to plot.")
+        return
+
+    plt.figure(figsize=(max(10, n_models * n_users * 1.2), 6))
+    bp = plt.boxplot(data, positions=positions, widths=box_width, patch_artist=True, showfliers=False)
+
+    # color boxes by model
+    colors = sns.color_palette("tab10", n_colors=n_models)
+    for i, patch in enumerate(bp['boxes']):
+        model_idx = i % n_models
+        patch.set_facecolor(colors[model_idx])
+
+    # draw separators between user groups
+    for user_idx in range(n_users - 1):
+        sep_x = (user_idx + 1) * (n_models * group_spacing) - (group_spacing / 2.0)
+        plt.axvline(x=sep_x, color='gray', linestyle='--', linewidth=1.0, alpha=0.6)
+
+    plt.xticks(positions, labels, rotation=45, ha='right')
+    plt.ylabel('Latency (ms)')
+    plt.title('Latency distribution by model and user-count (boxplots)')
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    # annotate success percentage above each model slot if available
+    try:
+        df_sucess = load_sucess_rates()
+        if df_sucess is not None and not df_sucess.empty:
+            ax = plt.gca()
+            ylim = ax.get_ylim()
+            y_offset = 0.02 * (ylim[1] - ylim[0])
+            for i, (model, nb_user) in enumerate(slot_keys):
+                # compute max latency for this slot (ignore NaN)
+                arr = np.array(data[i], dtype=float)
+                valid = arr[np.isfinite(arr)]
+                if valid.size == 0:
+                    continue
+                y_base = float(np.nanmax(valid))
+
+                percent = 0
+                try:
+                    row = df_sucess[(df_sucess['model'] == model) & (df_sucess['nb_users'] == nb_user)]
+                    if not row.empty:
+                        if 'mean_success_percent' in row.columns:
+                            percent = float(row['mean_success_percent'].iloc[0])
+                        elif 'percent' in row.columns:
+                            percent = float(row['percent'].iloc[0])
+                        else:
+                            for c in row.columns:
+                                if pd.api.types.is_numeric_dtype(row[c]):
+                                    percent = float(row[c].iloc[0])
+                                    break
+                except Exception:
+                    percent = 0
+
+                color = 'green' if percent > 49 else 'red'
+                ax.text(positions[i], y_base + y_offset, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
+            # expand y limits slightly to fit annotations
+            new_ylim_top = ax.get_ylim()[1] + 1.5 * y_offset
+            ax.set_ylim(ax.get_ylim()[0], new_ylim_top)
+    except Exception:
+        # don't fail plot if annotation fails
+        pass
+
+    # legend for models
+    import matplotlib.patches as mpatches
+    model_patches = [mpatches.Patch(color=colors[i], label=models[i]) for i in range(n_models)]
+    plt.legend(handles=model_patches, title='Models', bbox_to_anchor=(1.02, 1), loc='upper left')
+
+    os.makedirs(outdir, exist_ok=True)
+    plt.tight_layout()
+    outpath = os.path.join(outdir, 'latency_boxplots.png')
+    plt.savefig(outpath, bbox_inches='tight', dpi=300)
+    print(f"Latency boxplots saved to {outpath}")
+    plt.close()
+
+
 # --- Main flow ---
 if __name__ == "__main__":
     gpus, PUE = get_gpu_info_from_env()
@@ -724,3 +865,10 @@ if __name__ == "__main__":
     plot_manufacturing_vs_usage_global_mtc(global_impacts, factors, user_counts, models)
     # combined plot with three Y axes (GWP, ADPe, WU)
     plot_combined_global_impact(global_impacts, factors, user_counts, models)
+    # latency boxplots (from raw latency CSVs)
+    try:
+        raw_latencies = load_raw_latencies(models, user_counts, data_dir="measure/data")
+        
+        plot_latency_boxplots(raw_latencies, models, user_counts, outdir="images/impact_plots")
+    except Exception as e:
+        print(f"Warning: failed to produce latency boxplots: {e}")

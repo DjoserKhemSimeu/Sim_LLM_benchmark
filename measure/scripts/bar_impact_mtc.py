@@ -54,13 +54,30 @@ def load_a100_impact_data(csv_path="./data/more-than-carbon-data.csv"):
         print(f"Erreur: Le fichier {csv_path} est introuvable.")
         return None, None
 
-    # Garder les impacts bruts pour les colonnes Main dies et Heatsink
-    a100_impacts_raw = df_a100.set_index("Impact Category")[
-        ["Main dies", "Heatsink"]
-    ].to_dict("index")
+    # Colonnes composants à sommer pour obtenir 'Total'
+    comp_cols = [
+        "Casing",
+        "Heatsink",
+        "PCB",
+        "Main dies",
+        "POP",
+        "Upstream transport",
+    ]
+
+    # S'assurer que les colonnes numériques sont bien converties
+    for c in comp_cols:
+        if c in df_a100.columns:
+            df_a100[c] = pd.to_numeric(df_a100[c], errors="coerce").fillna(0.0)
+
+    # Calculer la colonne Total comme somme des composants sélectionnés
+    df_a100["Total"] = df_a100.loc[:, [c for c in comp_cols if c in df_a100.columns]].sum(axis=1)
+
+    # Préparer le dict d'impacts en incluant au moins Main dies, Heatsink et Total
+    cols_to_keep = [col for col in ["Main dies", "Heatsink", "Total"] if col in df_a100.columns]
+    a100_impacts_raw = df_a100.set_index("Impact Category")[cols_to_keep].to_dict("index")
     all_categories = df_a100["Impact Category"].tolist()
 
-    print("Impacts bruts Main dies et Heatsink de l'A100 chargés.")
+    print("Impacts bruts A100 (Main dies, Heatsink, Total) chargés.")
     return a100_impacts_raw, all_categories
 
 
@@ -88,9 +105,9 @@ def calculate_proportionality_factor(gpu, ref=A100_REF):
 
     # 3. Calcul du Facteur F_heatsink
     # F_heatsink ∝ GPU_TDP
-    F_heatsink = gpu["tdp"]/ref["tdp"]
+    F_heatsink = ((gpu["tdp"]/ref["tdp"]) + (gpu["die_area"]/ref["die_area"]))/2
     # 4. Facteur Total F_tot
-    F_tot = F_GPU_chip + F_heatsink
+    F_tot = (F_GPU_chip + F_heatsink)/2
 
     return F_GPU_chip, F_heatsink, F_tot
 
@@ -125,16 +142,14 @@ def main_impact_mtc():
         for cat in all_categories:
             cat_short = cat.split(" - ")[0]
 
-            # 2.2. Calculer l'impact total de l'A100 (Main dies + Heatsink) pour cette catégorie
-            impact_A100_total = (
-                a100_impacts_raw[cat]["Main dies"] + a100_impacts_raw[cat]["Heatsink"]
-            )
+            
 
             # 2.3. Estimer l'impact du GPU actuel par produit en croix (Proportionalité)
             # Impact_GPU = (Impact_A100_total * F_tot_GPU) / F_tot_A100
             impact_GPU_chip_estimated = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
             impact_GPU_heatsink_estimated = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
-            impact_GPU_estimated = impact_GPU_chip_estimated + impact_GPU_heatsink_estimated
+            impact_GPU_alpha_estimated = (a100_impacts_raw[cat]["Total"]/(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"])) * (impact_GPU_chip_estimated + impact_GPU_heatsink_estimated)
+            impact_GPU_estimated = impact_GPU_chip_estimated + impact_GPU_heatsink_estimated + impact_GPU_alpha_estimated
 
             total_impacts[cat_short] = impact_GPU_estimated
 
@@ -193,6 +208,7 @@ def main_impact_mtc():
         cats_short = [c.split(" - ")[0] for c in all_categories]
         sum_main = {cs: 0.0 for cs in cats_short}
         sum_heat = {cs: 0.0 for cs in cats_short}
+        sum_rest = {cs: 0.0 for cs in cats_short}
 
         # Somme des contributions Main dies et Heatsink sur tous les GPUs
         for gpu_id, gpu in gpus.items():
@@ -203,10 +219,12 @@ def main_impact_mtc():
                 cs = cat.split(" - ")[0]
                 main_val = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
                 heat_val = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
+                rest_val = a100_impacts_raw[cat]["Total"] / (a100_impacts_raw[cat]["Main dies"] - a100_impacts_raw[cat]["Heatsink"]) * (main_val + heat_val)
                 sum_main[cs] += main_val
                 sum_heat[cs] += heat_val
+                sum_rest[cs] += rest_val
 
-        df_comp = pd.DataFrame({"Main dies": sum_main, "Heatsink": sum_heat})
+        df_comp = pd.DataFrame({"Main dies": sum_main, "Heatsink": sum_heat, "Rest": sum_rest})
 
         # Calculer pourcentages normalisés à 100% par catégorie
         df_pct = df_comp.div(df_comp.sum(axis=1), axis=0).fillna(0) * 100
@@ -214,10 +232,11 @@ def main_impact_mtc():
         # Tracé empilé vertical par catégorie (Main dies en bas, Heatsink au-dessus)
         fig, ax = plt.subplots(figsize=(16, 6))
         x = range(len(df_pct))
-        colors = ["#8dd3c7", "#fb8072"]  # choix simple : vert clair / rouge clair
+        colors = ["#8dd3c7", "#fb8072", "#a6cee3"]  # choix simple : vert clair / rouge clair / bleu clair
 
         ax.bar(x, df_pct["Main dies"].values, label="Main dies (GPU chip)", color=colors[0], edgecolor="white")
         ax.bar(x, df_pct["Heatsink"].values, bottom=df_pct["Main dies"].values, label="Heatsink", color=colors[1], edgecolor="white")
+        ax.bar(x, df_pct["Rest"].values, bottom=df_pct["Main dies"].values + df_pct["Heatsink"].values, label="Rest", color=colors[2], edgecolor="white")
 
         # Annoter pour chaque catégorie : total absolu (Main+Heatsink) avec unité
         try:

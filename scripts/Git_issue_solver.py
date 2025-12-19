@@ -29,7 +29,8 @@ if args.user_id is not None:
         ID = 0
 HOST=args.host
 ITER=args.iter
-agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{args.n_users}_{ID}_{ITER}')
+NB_USER=args.n_users
+agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{NB_USER}_{ID}_{ITER}')
 os.chdir(agent_env_path)
 
 class WebSearchInput(BaseModel):
@@ -435,12 +436,13 @@ create_branch_tool = CreateBranchTool()
 agent_goal = (
     f"In the repository git@github.com:DjoserKhemSimeu/dummy_agent.git, resolve the GitHub issue number 1 "
     f"locally and propose PRs. Context: run by user_id={ID}. Local environment 'dummy_agent', owner='DjoserKhemSimeu', repo='dummy_agent'."
+    f"$$$RUN_ID: USER_ID={ID} NB_USER={NB_USER} MODEL={MODEL} ITER={ITER} HOST={HOST}$$$"
 )
 
 agent1 = Agent(
     role="issue-fixer",
     goal=agent_goal,
-    backstory=f"Autonomous agent to diagnose, propose, and apply fixes on GitHub repositories. (invoked by user {ID})",
+    backstory=f"ISSUE-FIXER:Autonomous agent to diagnose, propose, and apply fixes on GitHub repositories. (invoked by user {ID})",
     verbose=True,
     memory=True,
     tools=[clone_tool, create_branch_tool, read_tool, write_tool, tests_tool, commit_tool, push_tool, fetchIssue_tool],
@@ -449,13 +451,14 @@ agent1 = Agent(
 )
 
 task1 = Task(
-    description="Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:" \
+    description="TASK-PLANNER:Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:" \
     "1. Clone the GitHub repository locally an jump into it." \
     "2. Create a new branch for the changes." \
     "3. Analyze the issue and the code to identify the root of the issue." \
     "4. Make the necessary changes to the source code." \
     "5. Run the test suite to validate the changes." \
-    "6. If tests pass, commit the changes and push the branch to the remote repository.",
+    "6. If tests pass, commit the changes and push the branch to the remote repository."\
+    f"$$$RUN_ID: USER_ID={ID} NB_USER={NB_USER} MODEL={MODEL} ITER={ITER} HOST={HOST}$$$",
     expected_output="Report of the actions taken, including the URL of the created branch pushed.",
     agent=agent1,
 )
