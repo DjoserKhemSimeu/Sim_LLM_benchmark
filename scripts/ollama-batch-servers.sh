@@ -35,7 +35,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   export OLLAMA_KEEP_ALIVE="120m"
   export OLLAMA_NUM_PARALLEL="16"
   export OLLAMA_HOST="${HOST}:${PORT}"
-  export OLLAMA_DEBUG=2
+  export OLLAMA_DEBUG=3
   export CUDA_VISIBLE_DEVICES="$i"
 
   # Start server with nohup and log output
