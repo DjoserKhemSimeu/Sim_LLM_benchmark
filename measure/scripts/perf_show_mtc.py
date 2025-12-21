@@ -4,6 +4,11 @@ import json
 import csv
 import re
 from pathlib import Path
+import glob
+import re
+import json
+import collections
+import seaborn as sns
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -675,6 +680,226 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
     plt.close()
 
 
+# --- Parsed log analysis & plots (tokens by agent, tool-calls by model/user-count)
+def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
+    """Load parsed JSONL files and aggregate per-run token totals and tool call counts.
+    Returns dict keyed by run_key=(model, nb_user, iter, user_id) -> {'tokens':int,'agent':str,'tool_counts':Counter}
+    """
+    runs = {}
+    if tools_list is None:
+        tools_list = [
+            'web_search', 'git_clone', 'read_file', 'write_file', 'run_tests', 'git_commit',
+            'git_push', 'create_pr', 'fetch_issue', 'repo_tree', 'git_create_branch'
+        ]
+
+    for fname in glob.glob(os.path.join(parsed_dir, "parsed_*.jsonl")):
+        try:
+            with open(fname, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except Exception:
+                        # skip non-json lines
+                        continue
+                    s = json.dumps(obj, ensure_ascii=False)
+                    # Prefer explicit top-level metadata if present
+                    model = obj.get('model') or obj.get('model_name') or None
+                    nb_user = obj.get('nb_user') or obj.get('nb_users') or obj.get('nbUser') or None
+                    iternum = obj.get('iter') or obj.get('iteration') or obj.get('iter_num') or None
+                    user_id = obj.get('user_id') or obj.get('user') or obj.get('userid') or None
+
+                    # fallback to RUN_ID marker or filename
+                    if model is None:
+                        m = re.search(r'RUN_ID:.*MODEL=([^\s$]+)', s)
+                        if m:
+                            model = m.group(1)
+                        else:
+                            base = os.path.basename(fname)
+                            model = base.replace('parsed_', '').replace('.jsonl', '')
+
+                    # coerce nb_user/user_id to ints when possible
+                    try:
+                        nb_user_int = int(nb_user) if nb_user is not None and str(nb_user).isdigit() else None
+                    except Exception:
+                        nb_user_int = None
+                    try:
+                        user_id_int = int(user_id) if user_id is not None and str(user_id).isdigit() else None
+                    except Exception:
+                        user_id_int = None
+
+                    key = (str(model), nb_user_int, iternum, user_id_int)
+                    if key not in runs:
+                        runs[key] = {'tokens': 0, 'agent': 'unknown', 'tool_counts': collections.Counter()}
+
+                    # infer agent type from explicit fields or marker
+                    if runs[key]['agent'] == 'unknown':
+                        am = obj.get('agent') or obj.get('agent_name')
+                        if not am:
+                            mam = re.search(r'"role"\s*[:=]\s*"([^\"]+)"', s)
+                            if mam:
+                                am = mam.group(1)
+                            elif 'ISSUE-FIXER' in s or 'issue-fixer' in s or 'issue-fixer' in s.lower():
+                                am = 'issue-fixer'
+                        if am:
+                            runs[key]['agent'] = am
+
+                    # extract token counts from explicit numeric fields if available
+                    tok = 0
+                    # prefer explicit token counters emitted by parsers
+                    for k in ('nb_output_token', 'nb_output_tokens', 'nb_output_token_count'):
+                        if isinstance(obj.get(k), (int, float)):
+                            tok += int(obj.get(k) or 0)
+                    for k in ('nb_input_token', 'nb_input_tokens', 'nb_input_token_count'):
+                        if isinstance(obj.get(k), (int, float)):
+                            tok += int(obj.get(k) or 0)
+
+                    # fallback to usage.* fields
+                    if tok == 0 and isinstance(obj, dict):
+                        usage = obj.get('usage') or (obj.get('meta') and obj.get('meta').get('usage'))
+                        if isinstance(usage, dict):
+                            try:
+                                t1 = int(usage.get('total_tokens') or usage.get('total') or 0)
+                            except Exception:
+                                t1 = 0
+                            try:
+                                pt = int(usage.get('prompt_tokens', 0) or 0)
+                            except Exception:
+                                pt = 0
+                            try:
+                                ct = int(usage.get('completion_tokens', 0) or 0)
+                            except Exception:
+                                ct = 0
+                            tok += t1 + pt + ct
+
+                    # as last resort, try regex extraction of numeric token fields
+                    if tok == 0:
+                        m2 = re.search(r'"total_tokens"\s*:\s*(\d+)', s)
+                        if m2:
+                            tok += int(m2.group(1))
+                        else:
+                            m3 = re.search(r'"prompt_tokens"\s*:\s*(\d+).*"completion_tokens"\s*:\s*(\d+)', s)
+                            if m3:
+                                tok += int(m3.group(1)) + int(m3.group(2))
+
+                    if tok:
+                        runs[key]['tokens'] += int(tok)
+
+                    # Prefer explicit 'tool_called' field (single call) or list 'tool_calls'
+                    if obj.get('tool_called'):
+                        tc = obj.get('tool_called')
+                        if isinstance(tc, str):
+                            runs[key]['tool_counts'][tc] += 1
+                        elif isinstance(tc, list):
+                            for t in tc:
+                                runs[key]['tool_counts'][t] += 1
+                    elif obj.get('tool_calls') and isinstance(obj.get('tool_calls'), list):
+                        for t in obj.get('tool_calls'):
+                            runs[key]['tool_counts'][t] += 1
+                    else:
+                        # fallback: conservative substring match but count only once per tool per line
+                        for t in tools_list:
+                            if re.search(rf'\b{re.escape(t)}\b', s):
+                                runs[key]['tool_counts'][t] += 1
+        except FileNotFoundError:
+            continue
+        except Exception:
+            continue
+
+    return runs
+
+
+def plot_tokens_by_agent(parsed_dir="logs/parsed", user_counts=[1,10,100], models=None, outdir="images/combined_impact"):
+    runs = load_parsed_runs(parsed_dir=parsed_dir)
+    rows = []
+    for (model, nb_user, iternum, uid), data in runs.items():
+        if models and model not in models:
+            continue
+        rows.append({
+            'model': model,
+            'nb_user': nb_user if nb_user is not None else -1,
+            'iter': iternum,
+            'user_id': uid if uid is not None else -1,
+            'agent': data.get('agent', 'agent'),
+            'tokens': data.get('tokens', 0)
+        })
+
+    if not rows:
+        print("No parsed-run token data found for the requested models")
+        return
+
+    df = pd.DataFrame(rows)
+
+    # plot tokens per model (ignore nb_user grouping); each datapoint is a run (user_id/iter)
+    os.makedirs(outdir, exist_ok=True)
+    
+    # normalize agent names and restrict to the two agents requested
+    df['agent_norm'] = df['agent'].astype(str).str.upper()
+    keep_agents = ['ISSUE-FIXER', 'TASK-PLANNER']
+    df = df[df['agent_norm'].isin(keep_agents)].copy()
+    if df.empty:
+        print("No token data for ISSUE-FIXER or TASK-PLANNER agents found in parsed runs")
+        return
+
+    plt.figure(figsize=(max(8, len(df['model'].unique()) * 2.0), 6))
+    sns.set(style='whitegrid')
+    ax = sns.boxplot(x='model', y='tokens', hue='agent_norm', data=df, showfliers=False, hue_order=keep_agents)
+    ax.set_title('Tokens per agent type grouped by model (per-run distribution)')
+    ax.set_xlabel('model')
+    ax.set_ylabel('Total tokens (per run)')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    outpath = os.path.join(outdir, 'tokens_by_agent_boxplot.png')
+    plt.savefig(outpath, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved tokens-by-agent boxplot to {outpath}")
+
+
+def plot_tool_calls_by_model(parsed_dir="logs/parsed", user_counts=[1,10,100], models=None, outdir="images/combined_impact", tools_list=None):
+    runs = load_parsed_runs(parsed_dir=parsed_dir, tools_list=tools_list)
+    rows = []
+    for (model, nb_user, iternum, uid), data in runs.items():
+        if models and model not in models:
+            continue
+        # each datapoint corresponds to a single run (user_id / iter)
+        for tool, count in data['tool_counts'].items():
+            try:
+                uid_norm = int(uid) if uid is not None and str(uid).isdigit() else (uid if uid is not None else -1)
+            except Exception:
+                uid_norm = uid if uid is not None else -1
+            rows.append({
+                'model': model,
+                'nb_user': nb_user if nb_user is not None else -1,
+                'iter': iternum,
+                'user_id': uid_norm,
+                'tool': tool,
+                'count': int(count)
+            })
+
+    if not rows:
+        print("No parsed-run tool-call data found for the requested models/user_counts")
+        return
+
+    df = pd.DataFrame(rows)
+
+    # Plot boxplots per model (ignore nb_user differences). Each datapoint is per-run count for a (tool, user_id, iter)
+    os.makedirs(outdir, exist_ok=True)
+    plt.figure(figsize=(max(10, len(df['model'].unique()) * 2.0), 6))
+    sns.set(style='whitegrid')
+    ax = sns.boxplot(x='model', y='count', hue='tool', data=df, showfliers=False)
+    ax.set_title('Tool call counts per model (per-run distribution across users/iterations)')
+    ax.set_xlabel('model')
+    ax.set_ylabel('Tool call count (per run)')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    outpath = os.path.join(outdir, 'tool_calls_by_model_boxplot.png')
+    plt.savefig(outpath, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved tool-calls-by-model boxplot to {outpath}")
+
+
 # --- Latency plotting (boxplots) ---
 def load_raw_latencies(models, user_counts, data_dir="measure/data"):
     """Load raw latency CSVs named raw_latencies_{model}.csv and return
@@ -815,6 +1040,119 @@ def plot_latency_boxplots(raw_latencies, models, user_counts=[1, 10, 100], outdi
     print(f"Latency boxplots saved to {outpath}")
     plt.close()
 
+def plot_mean_weighted_tool_sequence_graph(
+    parsed_dir="logs/parsed",
+    models=None,
+    tools_list=None,
+    outdir="images/tool_sequences",
+    min_weight=0.1
+):
+    """
+    Plot a mean weighted directed graph of tool-call sequences per model.
+    Nodes = tools
+    Edges = transitions between consecutive tool calls
+    Edge weight = mean number of transitions per run
+    """
+
+    import networkx as nx
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import os
+
+    runs = load_parsed_runs(parsed_dir=parsed_dir, tools_list=tools_list)
+
+    # model -> list of sequences (each sequence = list of tools in order)
+    model_sequences = collections.defaultdict(list)
+
+    for (model, nb_user, iternum, uid), data in runs.items():
+        if models and model not in models:
+            continue
+
+        # reconstruct a sequence by expanding counts conservatively
+        seq = []
+        for tool, count in data["tool_counts"].items():
+            seq.extend([tool] * int(count))
+
+        if len(seq) >= 2:
+            model_sequences[model].append(seq)
+
+    if not model_sequences:
+        print("No tool sequences found to plot.")
+        return
+
+    os.makedirs(outdir, exist_ok=True)
+
+    for model, sequences in model_sequences.items():
+        G = nx.DiGraph()
+
+        transition_counter = collections.Counter()
+
+        for seq in sequences:
+            for a, b in zip(seq[:-1], seq[1:]):
+                transition_counter[(a, b)] += 1
+
+        n_runs = max(len(sequences), 1)
+
+        # build graph with mean weights
+        for (a, b), count in transition_counter.items():
+            mean_weight = count / n_runs
+            if mean_weight >= min_weight:
+                G.add_edge(a, b, weight=mean_weight)
+
+        if G.number_of_edges() == 0:
+            print(f"No significant transitions for model {model}")
+            continue
+
+        # --- plotting ---
+        plt.figure(figsize=(10, 8))
+
+        pos = nx.spring_layout(G, seed=42, k=1.2)
+
+        weights = np.array([G[u][v]["weight"] for u, v in G.edges()])
+        widths = 1.5 + 4 * (weights / weights.max())
+
+        nx.draw_networkx_nodes(
+            G, pos,
+            node_size=1800,
+            node_color="#E3F2FD",
+            edgecolors="black"
+        )
+
+        nx.draw_networkx_labels(
+            G, pos,
+            font_size=9,
+            font_weight="bold"
+        )
+
+        nx.draw_networkx_edges(
+            G, pos,
+            arrowstyle="->",
+            arrowsize=15,
+            width=widths,
+            edge_color=weights,
+            edge_cmap=plt.cm.viridis
+        )
+
+        edge_labels = {
+            (u, v): f"{G[u][v]['weight']:.2f}"
+            for u, v in G.edges()
+        }
+
+        nx.draw_networkx_edge_labels(
+            G, pos,
+            edge_labels=edge_labels,
+            font_size=8
+        )
+
+        plt.title(f"Mean weighted tool-call sequence graph\nModel: {model}")
+        plt.axis("off")
+        plt.tight_layout()
+
+        outpath = os.path.join(outdir, f"tool_sequence_graph_{model}.png")
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"Saved tool sequence graph for model '{model}' → {outpath}")
 
 # --- Main flow ---
 if __name__ == "__main__":
@@ -865,6 +1203,18 @@ if __name__ == "__main__":
     plot_manufacturing_vs_usage_global_mtc(global_impacts, factors, user_counts, models)
     # combined plot with three Y axes (GWP, ADPe, WU)
     plot_combined_global_impact(global_impacts, factors, user_counts, models)
+    # parsed-log derived plots: tokens by agent and tool-calls by model
+    try:
+        plot_tokens_by_agent(parsed_dir="logs/parsed", user_counts=user_counts, models=models)
+        plot_tool_calls_by_model(parsed_dir="logs/parsed", user_counts=user_counts, models=models)
+        plot_mean_weighted_tool_sequence_graph(
+                            parsed_dir="logs/parsed",
+                            models=models,
+                            outdir="images/tool_sequences",
+                            min_weight=0.2
+                            )
+    except Exception as e:
+        print(f"Failed to generate parsed-log plots: {e}")
     # latency boxplots (from raw latency CSVs)
     try:
         raw_latencies = load_raw_latencies(models, user_counts, data_dir="measure/data")

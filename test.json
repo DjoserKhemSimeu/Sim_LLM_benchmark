@@ -3,22 +3,21 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
-  "Iteration":10,
+  "Nb_users":[1,2],
+  "Iteration":1,
   "Models":["gemma3:4b"],
   "gpus": {
     "0": {
-      "nom": "NVIDIA RTX 1000",
-      "die_area": 159,
-      "tdp": 35,
-      "density": 118900000,
+      "nom": "NVIDIA GH200",
+      "die_area": 814,
+      "tdp": 900,
+      "density": 98300000,
       "tech_node": "5",
-      "type_memoire": "GDDR6",
-      "taille_memoire": 40,
+      "type_memoire": "HBM2e",
+      "taille_memoire": 480,
       "foundry": "TSMC",
       "date_sortie": "2024",
-      "fu": "Edge"
+      "fu": "Large scale"
     }
   }
 }
-

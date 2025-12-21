@@ -1,0 +1,232 @@
+Traceback (most recent call last):
+  File "/home/datamove/simeud/Documents/Sim_test/scripts/Git_issue_solver.py", line 474, in <module>
+    result = crew.kickoff()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 752, in kickoff
+    self._handle_crew_planning()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 956, in _handle_crew_planning
+    )._handle_crew_planning()
+      ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/planning_handler.py", line 70, in _handle_crew_planning
+    result = planner_task.execute_sync()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 458, in execute_sync
+    return self._execute_core(agent, context, tools)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 591, in _execute_core
+    raise e  # Re-raise the exception after emitting the event
+    ^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 529, in _execute_core
+    pydantic_output, json_output = self._export_output(result)
+                                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 768, in _export_output
+    model_output = convert_to_model(
+        result,
+    ...<3 lines>...
+        self.converter_cls,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/converter.py", line 200, in convert_to_model
+    return handle_partial_json(
+        result=result,
+    ...<3 lines>...
+        converter_cls=converter_cls,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/converter.py", line 257, in handle_partial_json
+    exported_result = model.model_validate_json(match.group())
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/pydantic/main.py", line 766, in model_validate_json
+    return cls.__pydantic_validator__.validate_json(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        json_data, strict=strict, extra=extra, context=context, by_alias=by_alias, by_name=by_name
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for PlannerTaskPydanticOutput
+list_of_plans_per_task.0.plan
+  Input should be a valid string [type=string_type, input_value=["Use the 'git_clone' too...GitHub for code review'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Clonage dans 'dummy_agent'...
+Basculement sur la nouvelle branche 'fix-issue-1_0'
+Exception ignored on threading shutdown:
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1536, in _shutdown
+    atexit_call()
+  File "/usr/lib/python3.13/threading.py", line 1507, in <lambda>
+    _threading_atexits.append(lambda: func(*arg, **kwargs))
+  File "/usr/lib/python3.13/concurrent/futures/thread.py", line 31, in _python_exit
+    t.join()
+  File "/usr/lib/python3.13/threading.py", line 1094, in join
+    self._handle.join(timeout)
+KeyboardInterrupt: 
+Traceback (most recent call last):
+  File "/home/datamove/simeud/Documents/Sim_test/scripts/Git_issue_solver.py", line 477, in <module>
+    result = crew.kickoff()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 752, in kickoff
+    self._handle_crew_planning()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 956, in _handle_crew_planning
+    )._handle_crew_planning()
+      ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/planning_handler.py", line 70, in _handle_crew_planning
+    result = planner_task.execute_sync()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 458, in execute_sync
+    return self._execute_core(agent, context, tools)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 591, in _execute_core
+    raise e  # Re-raise the exception after emitting the event
+    ^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 529, in _execute_core
+    pydantic_output, json_output = self._export_output(result)
+                                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 768, in _export_output
+    model_output = convert_to_model(
+        result,
+    ...<3 lines>...
+        self.converter_cls,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/converter.py", line 191, in convert_to_model
+    return handle_partial_json(
+        result=result,
+    ...<3 lines>...
+        converter_cls=converter_cls,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/converter.py", line 257, in handle_partial_json
+    exported_result = model.model_validate_json(match.group())
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/pydantic/main.py", line 766, in model_validate_json
+    return cls.__pydantic_validator__.validate_json(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        json_data, strict=strict, extra=extra, context=context, by_alias=by_alias, by_name=by_name
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for PlannerTaskPydanticOutput
+  Invalid JSON: trailing comma at line 17 column 7 [type=json_invalid, input_value='{\n  "list_of_plans_per_...n      ]\n    }\n  ]\n}', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
+fatal : 'main' n'est pas un commit et une branche 'issue-1_0' ne peut pas en être créée depuis
+fatal : le dépôt '<SSH_URL>' n'existe pas
+Clonage dans 'dummy_agent'...
+Basculement sur la nouvelle branche 'fix-issue-1_0'
+Traceback (most recent call last):
+  File "/home/datamove/simeud/Documents/Sim_test/scripts/Git_issue_solver.py", line 477, in <module>
+    result = crew.kickoff()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 755, in kickoff
+    result = self._run_sequential_process()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 995, in _run_sequential_process
+    return self._execute_tasks(self.tasks)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 1103, in _execute_tasks
+    task_output = task.execute_sync(
+        agent=agent_to_use,
+        context=context,
+        tools=tools_for_task,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 458, in execute_sync
+    return self._execute_core(agent, context, tools)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/task.py", line 522, in _execute_core
+    result = agent.execute_task(
+        task=self,
+        context=context,
+        tools=tools,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/agent/core.py", line 490, in execute_task
+    result = self._execute_without_timeout(task_prompt, task)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/agent/core.py", line 598, in _execute_without_timeout
+    return self.agent_executor.invoke(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        {
+        ^
+    ...<4 lines>...
+        }
+        ^
+    )["output"]
+    ^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/agents/crew_agent_executor.py", line 188, in invoke
+    formatted_answer = self._invoke_loop()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/agents/crew_agent_executor.py", line 229, in _invoke_loop
+    answer = get_llm_response(
+        llm=self.llm,
+    ...<6 lines>...
+        executor_context=self,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/utilities/agent_utils.py", line 268, in get_llm_response
+    answer = llm.call(
+        messages,
+    ...<3 lines>...
+        response_model=response_model,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/llm.py", line 1321, in call
+    return self._handle_non_streaming_response(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        params=params,
+        ^^^^^^^^^^^^^^
+    ...<4 lines>...
+        response_model=response_model,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/llm.py", line 1081, in _handle_non_streaming_response
+    response = litellm.completion(**params)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/litellm/utils.py", line 1251, in wrapper
+    result = original_function(*args, **kwargs)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/litellm/main.py", line 3444, in completion
+    response = base_llm_http_handler.completion(
+        model=model,
+    ...<14 lines>...
+        client=client,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 519, in completion
+    response = self._make_common_sync_call(
+        sync_httpx_client=sync_httpx_client,
+    ...<7 lines>...
+        logging_obj=logging_obj,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 216, in _make_common_sync_call
+    response = sync_httpx_client.post(
+        url=api_base,
+    ...<8 lines>...
+        logging_obj=logging_obj,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/litellm/llms/custom_httpx/http_handler.py", line 925, in post
+    response = self.client.send(req, stream=stream)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+        self.READ_NUM_BYTES, timeout=timeout
+    )
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyboardInterrupt

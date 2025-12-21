@@ -1,0 +1,82 @@
+Starting Git issue solver with user_id=0 using model=ministral-3:14b at host=http://127.0.0.1:53100
+Starting Git issue solver with user_id=0 using model=ministral-3:14b at host=http://127.0.0.1:53100
+╭────────────────────────────────────────────────────────────────── Crew Execution Started ──────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  Crew Execution Started                                                                                                                                    │
+│  Name: crew                                                                                                                                                │
+│  ID: ffa6a8ea-3e7a-4501-a4d5-640951dd839f                                                                                                                  │
+│  Tool Args:                                                                                                                                                │
+│                                                                                                                                                            │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+[96m
+[2025-12-18 15:29:06][0m[93m[INFO]: [0m[1m[93mPlanning the crew execution[0m
+🚀 Crew: crew
+└── 📋 Task: e3c6f654-ad67-4b77-94d9-98e025c1e3a7
+    Status: Executing Task...
+    └── ❌ LLM Failed╭──────────────────────────────────────────────────────────────────────── LLM Error ─────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  ❌ LLM Call Failed                                                                                                                                        │
+│  Error: litellm.APIConnectionError: OllamaException - {"error":"model 'ministral-3:14b' not found"}                                                        │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────────── Task Failure ───────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  Task Failed                                                                                                                                               │
+│  Name: e3c6f654-ad67-4b77-94d9-98e025c1e3a7                                                                                                                │
+│  Agent: Task Execution Planner                                                                                                                             │
+│  Tool Args:                                                                                                                                                │
+│                                                                                                                                                            │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─────────────────────────────────────────────────────────────────────── Crew Failure ───────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  Crew Execution Failed                                                                                                                                     │
+│  Name: crew                                                                                                                                                │
+│  ID: ffa6a8ea-3e7a-4501-a4d5-640951dd839f                                                                                                                  │
+│  Tool Args:                                                                                                                                                │
+│  Final Output:                                                                                                                                             │
+│                                                                                                                                                            │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+╭────────────────────────────────────────────────────────────────────── Tracing Status ──────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  Info: Tracing is disabled.                                                                                                                                │
+│                                                                                                                                                            │
+│  To enable tracing, do any one of these:                                                                                                                   │
+│  • Set tracing=True in your Crew/Flow code                                                                                                                 │
+│  • Set CREWAI_TRACING_ENABLED=true in your project's .env file                                                                                             │
+│  • Run: crewai traces enable                                                                                                                               │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+╭───────────────────────────────────────────────────────────────────── Execution Traces ─────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  🔍 Detailed execution traces are available!                                                                                                               │
+│                                                                                                                                                            │
+│  View insights including:                                                                                                                                  │
+│    • Agent decision-making process                                                                                                                         │
+│    • Task execution flow and timing                                                                                                                        │
+│    • Tool usage details                                                                                                                                    │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Would you like to view your execution traces? [y/N] (20s timeout): 
+
+╭───────────────────────────────────────────────────────────────── Tracing Preference Saved ─────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                            │
+│  Info: Tracing has been disabled.                                                                                                                          │
+│                                                                                                                                                            │
+│  Your preference has been saved. Future Crew/Flow executions will not collect traces.                                                                      │
+│                                                                                                                                                            │
+│  To enable tracing later, do any one of these:                                                                                                             │
+│  • Set tracing=True in your Crew/Flow code                                                                                                                 │
+│  • Set CREWAI_TRACING_ENABLED=true in your project's .env file                                                                                             │
+│  • Run: crewai traces enable                                                                                                                               │
+│                                                                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

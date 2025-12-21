@@ -1,0 +1,745 @@
+Starting Git issue solver with user_id=1 using model=gemma3:4b at host=http://127.0.0.1:53100
+╭──────────────────────────────────────────────────────────────────────────────────────────── Crew Execution Started ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Started                                                                                                                                                                                         │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: fdd2eb00-ceee-4a49-b626-fd4f76c5c150                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+[96m
+[2025-12-21 13:58:36][0m[93m[INFO]: [0m[1m[93mPlanning the crew execution[0m
+🚀 Crew: crew
+└── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+    Assigned to: Task Execution Planner
+    Status: ✅ Completed
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: 2aad2a1d-d991-4a25-bc8e-378af24124ca                                                                                                                                                                     │
+│  Agent: Task Execution Planner                                                                                                                                                                                  │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+🚀 Crew: crew
+├── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: 4aca1342-5731-4462-959c-f030318cd3da
+    Status: Executing Task...╭─────────────────────────────────────────────────────────────────────────────────────────────── 🤖 Agent Started ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Task: TASK-PLANNER:Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:1. Clone the GitHub repository locally an     │
+│  jump into it.2. Create a new branch for the changes.3. Analyze the issue and the code to identify the root of the issue.4. Make the necessary changes to the source code.5. Run the test suite to validate     │
+│  the changes.6. If tests pass, commit the changes and push the branch to the remote repository.$$$RUN_ID: USER_ID=1 NB_USER=5 MODEL=gemma3:4b ITER=0 HOST=http://127.0.0.1:53100$$$1. **Clone the               │
+│  Repository:** Use the `git_clone` tool to clone the GitHub repository locally: `git_clone(repo_url='git@github.com:DjoserKhemSimeu/dummy_agent.git')`.                                                         │
+│  2. **Create a Branch:** Use the `git_create_branch` tool to create a new branch for the changes: `git_create_branch(branch='fix-issue-1', start_point='main', checkout=True)`.                                 │
+│  3. **Analyze the Issue:** Use the `read_file` tool to read the issue description: `read_file(path='issue_description.txt')`. Analyze the issue description and the code to identify the root cause of the      │
+│  issue.                                                                                                                                                                                                         │
+│  4. **Make Changes:** Based on the analysis, modify the source code. This likely involves using the `write_file` tool to update the files.  For example: `write_file(path='path/to/affected/file.py',           │
+│  content='new code')`.                                                                                                                                                                                          │
+│  5. **Run Tests:** Use the `run_tests` tool to execute the test suite: `run_tests(pytest_args='')`.  This step validates the changes.                                                                           │
+│  6. **Commit and Push:** If tests pass, use the `git_commit` tool to stage and commit the changes: `git_commit(message='Fix issue #1')`. Then, use the `git_push` tool to push the branch to the remote         │
+│  repository: `git_push(force=False)`.                                                                                                                                                                           │
+│  7. **Fetch Issue:** Fetch the issue body using the `fetch_issue` tool: `fetch_issue(owner='DjoserKhemSimeu', repo='dummy_agent', issue_number=1)`.                                                             │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: 4aca1342-5731-4462-959c-f030318cd3da
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Okay, let's start by cloning the repository. Then I'll create a branch, fetch the issue description, and proceed with the fix based on the issue description.                                         │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_clone                                                                                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                                                                                                                                 │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Cloned to: dummy_agent and jumped into it                                                                                                                                                                      │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: 4aca1342-5731-4462-959c-f030318cd3da
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Using git_create_branch (1)
+    └── 🔧 Used git_create_branch (1)╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: Now that the repository is cloned, I need to create a branch for the fix. I'll use the `git_create_branch` tool to create a new branch called 'fix-issue-1' based on the 'main' branch. I    │
+│  will also checkout to this new branch.                                                                                                                                                                         │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_create_branch                                                                                                                                                                                  │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "branch": "fix-issue-1",                                                                                                                                                                                     │
+│    "start_point": "main",                                                                                                                                                                                       │
+│    "checkout": true                                                                                                                                                                                             │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Branch 'fix-issue-1_1' created                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: 4aca1342-5731-4462-959c-f030318cd3da
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Using git_create_branch (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Using fetch_issue (1)
+    └── 🔧 Used fetch_issue (1)╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: I now have the cloned repository and a new branch. Next, I need to fetch the issue description so I can understand the problem I am supposed to fix.                                         │
+│                                                                                                                                                                                                                 │
+│  Using Tool: fetch_issue                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "owner": "DjoserKhemSimeu",                                                                                                                                                                                  │
+│    "repo": "dummy_agent",                                                                                                                                                                                       │
+│    "issue_number": 1                                                                                                                                                                                            │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Bonjour,                                                                                                                                                                                                       │
+│                                                                                                                                                                                                                 │
+│  Lorsque j'exécute `app.py`, une erreur apparaît :                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      NameError: name 'c' is not defined                                                                                                                                                                         │
+│                                                                                                                                                                                                                 │
+│  La fonction `addition(a, b)` utilise `c` alors que cette variable n'existe pas.                                                                                                                                │
+│  La ligne suivante pose problème :                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      return a + c                                                                                                                                                                                               │
+│                                                                                                                                                                                                                 │
+│  Solution attendue : remplacer `c` par `b`.                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  Merci !                                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+│  You ONLY have access to the following tools, and should NEVER make up tools that are not listed here:                                                                                                          │
+│                                                                                                                                                                                                                 │
+│  Tool Name: git_clone                                                                                                                                                                                           │
+│  Tool Arguments: {'repo_url': {'description': 'SSH of the GitHub repository to clone', 'type': 'str'}}                                                                                                          │
+│  Tool Description: Clone a GitHub repository locally (uses the `git` CLI) and change into the cloned directory.                                                                                                 │
+│  Tool Name: git_create_branch                                                                                                                                                                                   │
+│  Tool Arguments: {'branch': {'description': 'Name of the branch to create', 'type': 'str'}, 'start_point': {'description': 'Start commit/branch (e.g., main)', 'type': 'Union[str, NoneType]'}, 'checkout':     │
+│  {'description': 'If True, switch to the new branch after creation', 'type': 'Union[bool, NoneType]'}}                                                                                                          │
+│  Tool Description: Create a new local branch and (optionally) checkout to it.                                                                                                                                   │
+│  Tool Name: read_file                                                                                                                                                                                           │
+│  Tool Arguments: {'path': {'description': "Relative path in the repo to the file to read, if you already used git clone you don't need to put the name of the repo", 'type': 'str'}}                            │
+│  Tool Description: Reads a file in the cloned repository and returns its content.                                                                                                                               │
+│  Tool Name: write_file                                                                                                                                                                                          │
+│  Tool Arguments: {'path': {'description': 'Relative path in the repo to the file to write', 'type': 'str'}, 'content': {'description': 'Content to write', 'type': 'str'}}                                      │
+│  Tool Description: Writes content to a file in the cloned repository (creates directories if needed).                                                                                                           │
+│  Tool Name: run_tests                                                                                                                                                                                           │
+│  Tool Arguments: {'pytest_args': {'description': 'Additional arguments for pytest', 'type': 'Union[str, NoneType]'}}                                                                                            │
+│  Tool Description: Runs the test suite via `pytest` if present in the repository.                                                                                                                               │
+│  Tool Name: git_commit                                                                                                                                                                                          │
+│  Tool Arguments: {'message': {'description': None, 'type': 'str'}}                                                                                                                                              │
+│  Tool Description: Stage and commit changes in the local repository.                                                                                                                                            │
+│  Tool Name:...                                                                                                                                                                                                  │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+🚀 Crew: crew
+├── 📋 Task: 2aad2a1d-d991-4a25-bc8e-378af24124ca
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: 4aca1342-5731-4462-959c-f030318cd3da
+    Assigned to: issue-fixer
+    Status: ✅ Completed
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Using git_create_branch (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Using fetch_issue (1)
+    └── 🔧 Used fetch_issue (1)╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: 4aca1342-5731-4462-959c-f030318cd3da                                                                                                                                                                     │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭───────────────────────────────────────────────────────────────────────────────────────────── ✅ Agent Final Answer ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Final Answer:                                                                                                                                                                                                  │
+│  ```                                                                                                                                                                                                            │
+│  Action: git_clone                                                                                                                                                                                              │
+│  Action Input: {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}                                                                                                                                   │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+--- Final result ---
+```
+Action: git_clone
+Action Input: {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Crew Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Completed                                                                                                                                                                                       │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: fdd2eb00-ceee-4a49-b626-fd4f76c5c150                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│  Final Output: ```                                                                                                                                                                                              │
+│  Action: git_clone                                                                                                                                                                                              │
+│  Action Input: {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}                                                                                                                                   │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Tracing Status ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Info: Tracing is disabled.                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  To enable tracing, do any one of these:                                                                                                                                                                        │
+│  • Set tracing=True in your Crew/Flow code                                                                                                                                                                      │
+│  • Set CREWAI_TRACING_ENABLED=true in your project's .env file                                                                                                                                                  │
+│  • Run: crewai traces enable                                                                                                                                                                                    │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Starting Git issue solver with user_id=1 using model=gemma3:4b at host=http://127.0.0.1:53100
+╭──────────────────────────────────────────────────────────────────────────────────────────── Crew Execution Started ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Started                                                                                                                                                                                         │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: cbde08d6-d3cc-48e7-80f9-bd8d09bd8667                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+[96m
+[2025-12-21 14:09:29][0m[93m[INFO]: [0m[1m[93mPlanning the crew execution[0m
+🚀 Crew: crew
+└── 📋 Task: 5cfec800-78bb-45b2-abc5-f9ced6b5939d
+    Assigned to: Task Execution Planner
+    Status: ✅ Completed╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: 5cfec800-78bb-45b2-abc5-f9ced6b5939d                                                                                                                                                                     │
+│  Agent: Task Execution Planner                                                                                                                                                                                  │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+🚀 Crew: crew
+├── 📋 Task: 5cfec800-78bb-45b2-abc5-f9ced6b5939d
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: e7285fc8-792c-40a0-abd9-4ad364885e9a
+    Status: Executing Task...╭─────────────────────────────────────────────────────────────────────────────────────────────── 🤖 Agent Started ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Task: TASK-PLANNER:Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:1. Clone the GitHub repository locally an     │
+│  jump into it.2. Create a new branch for the changes.3. Analyze the issue and the code to identify the root of the issue.4. Make the necessary changes to the source code.5. Run the test suite to validate     │
+│  the changes.6. If tests pass, commit the changes and push the branch to the remote repository.$$$RUN_ID: USER_ID=1 NB_USER=5 MODEL=gemma3:4b ITER=0 HOST=http://127.0.0.1:53100$$$1. **Clone the               │
+│  repository:** Use the `git_clone` tool to clone the GitHub repository located at `git@github.com:DjoserKhemSimeu/dummy_agent.git` into the local environment 'dummy_agent'.                                    │
+│  2. **Create a new branch:** Use the `git_create_branch` tool to create a new branch named 'fix-issue-1' from the 'main' branch, to isolate the changes. The `start_point` is set to 'main'.                    │
+│  3. **Analyze the issue:** Read the issue description and any relevant code to understand the root cause. Use the `read_file` tool to read the relevant files in the repository.                                │
+│  4. **Propose a patch:** Based on the diagnosis, make the necessary code changes. Use the `git_commit` tool to stage and commit the changes with a descriptive message (e.g., 'Fix: Corrected issue number      │
+│  1').                                                                                                                                                                                                           │
+│  5. **Run tests:** Use the `run_tests` tool to execute the test suite. If the tests pass, proceed to the next step.                                                                                             │
+│  6. **Create a PR:** If the tests pass, create a Pull Request (PR) to merge the changes into the 'main' branch. (Note: This step is not directly supported by the available tools and would require manual      │
+│  interaction with GitHub.)                                                                                                                                                                                      │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 5cfec800-78bb-45b2-abc5-f9ced6b5939d
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: e7285fc8-792c-40a0-abd9-4ad364885e9a
+    Status: Executing Task...
+    ├── 🔧 Using git_clone (1)
+    └── 🔧 Used git_clone (1)╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Okay, let's start by cloning the repository. This will set up the local environment for further investigation and modification.                                                                       │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_clone                                                                                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                                                                                                                                 │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Clone error: Command '['git', 'clone', 'git@github.com:DjoserKhemSimeu/dummy_agent.git']' returned non-zero exit status 128.                                                                                   │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 5cfec800-78bb-45b2-abc5-f9ced6b5939d
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: e7285fc8-792c-40a0-abd9-4ad364885e9a
+    Status: Executing Task...
+    ├── 🔧 Using git_clone (1)
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_clone (2)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: The clone command failed. This likely means there's an issue with the SSH key or the URL. Let's try cloning using the HTTPS URL.                                                             │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_clone                                                                                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "repo_url": "https://github.com/DjoserKhemSimeu/dummy_agent.git"                                                                                                                                             │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Please use the SSH URL for cloning                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 5cfec800-78bb-45b2-abc5-f9ced6b5939d
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+│   └── 🧠 Thinking...
+└── 📋 Task: e7285fc8-792c-40a0-abd9-4ad364885e9a
+    Assigned to: issue-fixer
+    Status: ✅ Completed
+    ├── 🔧 Using git_clone (1)
+    ├── 🔧 Used git_clone (1)
+    └── 🔧 Used git_clone (2)╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: e7285fc8-792c-40a0-abd9-4ad364885e9a                                                                                                                                                                     │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+╭───────────────────────────────────────────────────────────────────────────────────────────── ✅ Agent Final Answer ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Final Answer:                                                                                                                                                                                                  │
+│  ```                                                                                                                                                                                                            │
+│  Thought: I now know the final answer                                                                                                                                                                           │
+│  Action: git_clone                                                                                                                                                                                              │
+│  Action Input: {'repo_url': 'https://github.com/DjoserKhemSimeu/dummy_agent.git'}                                                                                                                               │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+--- Final result ---
+```
+Thought: I now know the final answer
+Action: git_clone
+Action Input: {'repo_url': 'https://github.com/DjoserKhemSimeu/dummy_agent.git'}
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Crew Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Completed                                                                                                                                                                                       │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: cbde08d6-d3cc-48e7-80f9-bd8d09bd8667                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│  Final Output: ```                                                                                                                                                                                              │
+│  Thought: I now know the final answer                                                                                                                                                                           │
+│  Action: git_clone                                                                                                                                                                                              │
+│  Action Input: {'repo_url': 'https://github.com/DjoserKhemSimeu/dummy_agent.git'}                                                                                                                               │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Tracing Status ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Info: Tracing is disabled.                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  To enable tracing, do any one of these:                                                                                                                                                                        │
+│  • Set tracing=True in your Crew/Flow code                                                                                                                                                                      │
+│  • Set CREWAI_TRACING_ENABLED=true in your project's .env file                                                                                                                                                  │
+│  • Run: crewai traces enable                                                                                                                                                                                    │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Starting Git issue solver with user_id=1 using model=gemma3:4b at host=http://127.0.0.1:53100
+╭──────────────────────────────────────────────────────────────────────────────────────────── Crew Execution Started ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Started                                                                                                                                                                                         │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: dbac1bb1-9fa1-45cf-826f-94190fbab2dd                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+[96m
+[2025-12-21 14:40:12][0m[93m[INFO]: [0m[1m[93mPlanning the crew execution[0m
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: 81b7e52a-c6bd-4232-acf6-43e6cda9783c                                                                                                                                                                     │
+│  Agent: Task Execution Planner                                                                                                                                                                                  │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    └── 🧠 Thinking...╭─────────────────────────────────────────────────────────────────────────────────────────────── 🤖 Agent Started ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Task: TASK-PLANNER:Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:1. Clone the GitHub repository locally an     │
+│  jump into it.2. Create a new branch for the changes.3. Analyze the issue and the code to identify the root of the issue.4. Make the necessary changes to the source code.5. Run the test suite to validate     │
+│  the changes.6. If tests pass, commit the changes and push the branch to the remote repository.$$$RUN_ID: USER_ID=1 NB_USER=5 MODEL=gemma3:4b ITER=0 HOST=http://127.0.0.1:53100$$$1. **Clone the               │
+│  Repository:** Use the `git_clone` tool to clone the GitHub repository located at `git@github.com:DjoserKhemSimeu/dummy_agent.git`. This will create a local copy of the repository.                            │
+│  2. **Create a New Branch:** Utilize the `git_create_branch` tool to create a new branch named 'fix-issue-1' from the 'main' branch. This ensures that the changes are isolated and can be easily merged        │
+│  later.                                                                                                                                                                                                         │
+│  3. **Analyze the Issue:** Read the description of the GitHub issue number 1.  Use the `read_file` tool to read the issue description and understand the problem.                                               │
+│  4. **Diagnose and Propose a Patch:** Based on the issue description and the cloned repository, identify the root cause of the problem.  Use `read_file` to examine the relevant code.  Propose a patch that    │
+│  addresses the identified issue.                                                                                                                                                                                │
+│  5. **Make the Necessary Changes to the Source Code:**  Implement the proposed patch by making the necessary changes to the source code within the 'fix-issue-1' branch. Use `write_file` to modify files       │
+│  within the repository.                                                                                                                                                                                         │
+│  6. **Run the Test Suite:** Execute the test suite using the `run_tests` tool. This will verify that the changes have resolved the issue and haven't introduced any new problems.                               │
+│  7. **Commit and Push:** If the tests pass, use the `git_commit` tool to stage and commit the changes with a descriptive message (e.g., 'Fix: Resolve issue number 1'). Then, use the `git_push` tool to push   │
+│  the 'fix-issue-1' branch to the remote repository.                                                                                                                                                             │
+│  8. **Create a PR:** If the tests pass, create a Pull Request (PR) from the 'fix-issue-1' branch to the 'main' branch on the GitHub repository.                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Okay, let's start by cloning the repository. Then, I'll create a branch for the fix and fetch the issue details to understand the problem.                                                            │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_clone                                                                                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                                                                                                                                 │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Cloned to: dummy_agent and jumped into it                                                                                                                                                                      │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: Now that the repository is cloned, I need to create a new branch to work on the fix for issue number 1. I'll create a branch named 'fix-issue-1' from the 'main' branch.                     │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_create_branch                                                                                                                                                                                  │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "branch": "fix-issue-1",                                                                                                                                                                                     │
+│    "start_point": "main",                                                                                                                                                                                       │
+│    "checkout": true                                                                                                                                                                                             │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Branch 'fix-issue-1_1' created                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Used fetch_issue (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: Now that I have the repository cloned and a new branch created, I need to fetch the issue details to understand the problem. I can use the `fetch_issue` tool to retrieve the issue JSON     │
+│  content.                                                                                                                                                                                                       │
+│                                                                                                                                                                                                                 │
+│  Using Tool: fetch_issue                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "owner": "DjoserKhemSimeu",                                                                                                                                                                                  │
+│    "repo": "dummy_agent",                                                                                                                                                                                       │
+│    "issue_number": 1                                                                                                                                                                                            │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Bonjour,                                                                                                                                                                                                       │
+│                                                                                                                                                                                                                 │
+│  Lorsque j'exécute `app.py`, une erreur apparaît :                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      NameError: name 'c' is not defined                                                                                                                                                                         │
+│                                                                                                                                                                                                                 │
+│  La fonction `addition(a, b)` utilise `c` alors que cette variable n'existe pas.                                                                                                                                │
+│  La ligne suivante pose problème :                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      return a + c                                                                                                                                                                                               │
+│                                                                                                                                                                                                                 │
+│  Solution attendue : remplacer `c` par `b`.                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  Merci !                                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+│  You ONLY have access to the following tools, and should NEVER make up tools that are not listed here:                                                                                                          │
+│                                                                                                                                                                                                                 │
+│  Tool Name: git_clone                                                                                                                                                                                           │
+│  Tool Arguments: {'repo_url': {'description': 'SSH of the GitHub repository to clone', 'type': 'str'}}                                                                                                          │
+│  Tool Description: Clone a GitHub repository locally (uses the `git` CLI) and change into the cloned directory.                                                                                                 │
+│  Tool Name: git_create_branch                                                                                                                                                                                   │
+│  Tool Arguments: {'branch': {'description': 'Name of the branch to create', 'type': 'str'}, 'start_point': {'description': 'Start commit/branch (e.g., main)', 'type': 'Union[str, NoneType]'}, 'checkout':     │
+│  {'description': 'If True, switch to the new branch after creation', 'type': 'Union[bool, NoneType]'}}                                                                                                          │
+│  Tool Description: Create a new local branch and (optionally) checkout to it.                                                                                                                                   │
+│  Tool Name: read_file                                                                                                                                                                                           │
+│  Tool Arguments: {'path': {'description': "Relative path in the repo to the file to read, if you already used git clone you don't need to put the name of the repo", 'type': 'str'}}                            │
+│  Tool Description: Reads a file in the cloned repository and returns its content.                                                                                                                               │
+│  Tool Name: write_file                                                                                                                                                                                          │
+│  Tool Arguments: {'path': {'description': 'Relative path in the repo to the file to write', 'type': 'str'}, 'content': {'description': 'Content to write', 'type': 'str'}}                                      │
+│  Tool Description: Writes content to a file in the cloned repository (creates directories if needed).                                                                                                           │
+│  Tool Name: run_tests                                                                                                                                                                                           │
+│  Tool Arguments: {'pytest_args': {'description': 'Additional arguments for pytest', 'type': 'Union[str, NoneType]'}}                                                                                            │
+│  Tool Description: Runs the test suite via `pytest` if present in the repository.                                                                                                                               │
+│  Tool Name: git_commit                                                                                                                                                                                          │
+│  Tool Arguments: {'message': {'description': None, 'type': 'str'}}                                                                                                                                              │
+│  Tool Description: Stage and commit changes in the local repository.                                                                                                                                            │
+│  Tool Name:...                                                                                                                                                                                                  │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Used fetch_issue (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: I need to clone the repository, fetch the issue details, and then fix the `NameError` in the code.                                                                                           │
+│                                                                                                                                                                                                                 │
+│  Using Tool: fetch_issue                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "owner": "DjoserKhemSimeu",                                                                                                                                                                                  │
+│    "repo": "dummy_agent",                                                                                                                                                                                       │
+│    "issue_number": 1                                                                                                                                                                                            │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  I tried reusing the same input, I must stop using this action input. I'll try something else instead.                                                                                                          │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Used fetch_issue (1)
+    └── 🔧 Used git_clone (2)╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Thought: I need to clone the repository and then read the file to understand the code and the error.                                                                                                  │
+│                                                                                                                                                                                                                 │
+│  Using Tool: git_clone                                                                                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used git_clone (2)
+    └── 🧠 Thinking...╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                                                                                                                                 │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Cloned to: dummy_agent and jumped into it                                                                                                                                                                      │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 81b7e52a-c6bd-4232-acf6-43e6cda9783c
+│   Assigned to: Task Execution Planner
+│   Status: ✅ Completed
+└── 📋 Task: 5c56e815-e47d-445a-a9d8-63ba5877a07f
+    Assigned to: issue-fixer
+    Status: ✅ Completed
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used git_create_branch (1)
+    ├── 🔧 Used fetch_issue (1)
+    └── 🔧 Used git_clone (2)╭──────────────────────────────────────────────────────────────────────────────────────────────── Task Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Task Completed                                                                                                                                                                                                 │
+│  Name: 5c56e815-e47d-445a-a9d8-63ba5877a07f                                                                                                                                                                     │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭───────────────────────────────────────────────────────────────────────────────────────────── ✅ Agent Final Answer ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Final Answer:                                                                                                                                                                                                  │
+│  {'action': 'git_clone', 'action_input': {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}}                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+--- Final result ---
+{'action': 'git_clone', 'action_input': {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}}
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Crew Completion ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Completed                                                                                                                                                                                       │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: dbac1bb1-9fa1-45cf-826f-94190fbab2dd                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│  Final Output: {'action': 'git_clone', 'action_input': {'repo_url': 'git@github.com:DjoserKhemSimeu/dummy_agent.git'}}                                                                                          │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────────────────────── Tracing Status ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Info: Tracing is disabled.                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  To enable tracing, do any one of these:                                                                                                                                                                        │
+│  • Set tracing=True in your Crew/Flow code                                                                                                                                                                      │
+│  • Set CREWAI_TRACING_ENABLED=true in your project's .env file                                                                                                                                                  │
+│  • Run: crewai traces enable                                                                                                                                                                                    │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

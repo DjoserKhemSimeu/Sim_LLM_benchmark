@@ -30,6 +30,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
     model = os.environ.get("BENCH_MODEL", "mistral:7b")
     toml_config = {
         "model": model,
+        "temperature": 0.0,
         "system_message": "You are an assistant",
         "ollama_instances": {},
     }
