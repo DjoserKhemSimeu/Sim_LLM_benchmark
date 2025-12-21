@@ -1040,119 +1040,134 @@ def plot_latency_boxplots(raw_latencies, models, user_counts=[1, 10, 100], outdi
     print(f"Latency boxplots saved to {outpath}")
     plt.close()
 
-def plot_mean_weighted_tool_sequence_graph(
+def plot_tool_sequence_sankey_plotly(
     parsed_dir="logs/parsed",
     models=None,
-    tools_list=None,
     outdir="images/tool_sequences",
-    min_weight=0.1
+    min_prop=0.05
 ):
-    """
-    Plot a mean weighted directed graph of tool-call sequences per model.
-    Nodes = tools
-    Edges = transitions between consecutive tool calls
-    Edge weight = mean number of transitions per run
-    """
-
-    import networkx as nx
-    import matplotlib.pyplot as plt
-    import numpy as np
     import os
+    import json
+    import glob
+    import collections
+    import plotly.graph_objects as go
 
-    runs = load_parsed_runs(parsed_dir=parsed_dir, tools_list=tools_list)
+    TOOL_ALIASES = {
+        "git_create_branch": "git_branch",
+    }
 
-    # model -> list of sequences (each sequence = list of tools in order)
-    model_sequences = collections.defaultdict(list)
+    # (model, user, nb, iter) -> ordered tools
+    runs = collections.defaultdict(list)
 
-    for (model, nb_user, iternum, uid), data in runs.items():
-        if models and model not in models:
-            continue
+    # -------- PARSE LOGS (ORDER = FILE ORDER) --------
+    for fname in glob.glob(os.path.join(parsed_dir, "parsed_*.jsonl")):
+        with open(fname, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
 
-        # reconstruct a sequence by expanding counts conservatively
-        seq = []
-        for tool, count in data["tool_counts"].items():
-            seq.extend([tool] * int(count))
+                model = obj.get("model") or obj.get("model_name")
+                user = obj.get("user_id")
+                nb = obj.get("nb_user")
+                it = obj.get("iter")
 
-        if len(seq) >= 2:
-            model_sequences[model].append(seq)
+                if None in (model, user, nb, it):
+                    continue
+                if models and model not in models:
+                    continue
 
-    if not model_sequences:
-        print("No tool sequences found to plot.")
+                tool = obj.get("tool_called")
+                if isinstance(tool, str):
+                    tool = TOOL_ALIASES.get(tool, tool)
+                    runs[(model, user, nb, it)].append(tool)
+
+    if not runs:
+        print("No runs found.")
         return
 
     os.makedirs(outdir, exist_ok=True)
 
-    for model, sequences in model_sequences.items():
-        G = nx.DiGraph()
+    # group by model
+    model_runs = collections.defaultdict(list)
+    for (model, *_), seq in runs.items():
+        if seq:
+            model_runs[model].append(seq)
 
-        transition_counter = collections.Counter()
+    # -------- SANKEY PER MODEL --------
+    for model, sequences in model_runs.items():
+        n_runs = len(sequences)
 
-        for seq in sequences:
-            for a, b in zip(seq[:-1], seq[1:]):
-                transition_counter[(a, b)] += 1
+        transition_seen = collections.defaultdict(set)
 
-        n_runs = max(len(sequences), 1)
+        for run_id, seq in enumerate(sequences):
+            seq_full = ["SOURCE"] + seq + ["SINK"]
+            for a, b in zip(seq_full[:-1], seq_full[1:]):
+                transition_seen[(a, b)].add(run_id)
 
-        # build graph with mean weights
-        for (a, b), count in transition_counter.items():
-            mean_weight = count / n_runs
-            if mean_weight >= min_weight:
-                G.add_edge(a, b, weight=mean_weight)
+        # nodes
+        nodes = sorted(set([x for ab in transition_seen for x in ab]))
+        node_index = {n: i for i, n in enumerate(nodes)}
 
-        if G.number_of_edges() == 0:
-            print(f"No significant transitions for model {model}")
+        sources, targets, values, link_labels, link_text = [], [], [], [], []
+
+
+        for (a, b), run_ids in transition_seen.items():
+            prop = len(run_ids) / n_runs
+            if prop >= min_prop:
+                sources.append(node_index[a])
+                targets.append(node_index[b])
+                values.append(prop)
+                # label court (affichable)
+                link_labels.append(f"{prop:.2f}")
+
+                # texte riche (hover)
+                link_text.append(
+                    f"{a} → {b}<br>"
+                    f"Proportion de runs : <b>{prop:.2f}</b>"
+                )
+
+
+        if not values:
+            print(f"No transitions for model {model}")
             continue
 
-        # --- plotting ---
-        plt.figure(figsize=(10, 8))
-
-        pos = nx.spring_layout(G, seed=42, k=1.2)
-
-        weights = np.array([G[u][v]["weight"] for u, v in G.edges()])
-        widths = 1.5 + 4 * (weights / weights.max())
-
-        nx.draw_networkx_nodes(
-            G, pos,
-            node_size=1800,
-            node_color="#E3F2FD",
-            edgecolors="black"
+        fig = go.Figure(
+            data=[
+                go.Sankey(
+                    arrangement="snap",
+                    node=dict(
+                        pad=20,
+                        thickness=20,
+                        line=dict(color="black", width=0.5),
+                        label=nodes
+                    ),
+                    link=dict(
+                        source=sources,
+                        target=targets,
+                        value=values,
+                        label=link_labels,
+                        customdata=link_text,
+                        hovertemplate="%{customdata}<extra></extra>"
+                    )
+                )
+            ]
         )
 
-        nx.draw_networkx_labels(
-            G, pos,
-            font_size=9,
-            font_weight="bold"
+        fig.update_layout(
+            title_text=f"Tool-call Sankey diagram (real order)<br>Model: {model}",
+            font_size=11
         )
 
-        nx.draw_networkx_edges(
-            G, pos,
-            arrowstyle="->",
-            arrowsize=15,
-            width=widths,
-            edge_color=weights,
-            edge_cmap=plt.cm.viridis
-        )
+        out_png = os.path.join(outdir, f"tool_sankey_{model}.png")
+        out_html = os.path.join(outdir, f"tool_sankey_{model}.html")
 
-        edge_labels = {
-            (u, v): f"{G[u][v]['weight']:.2f}"
-            for u, v in G.edges()
-        }
+        fig.write_image(out_png, scale=2)
+        fig.write_html(out_html)
 
-        nx.draw_networkx_edge_labels(
-            G, pos,
-            edge_labels=edge_labels,
-            font_size=8
-        )
+        print(f"Sankey saved → {out_png}")
 
-        plt.title(f"Mean weighted tool-call sequence graph\nModel: {model}")
-        plt.axis("off")
-        plt.tight_layout()
-
-        outpath = os.path.join(outdir, f"tool_sequence_graph_{model}.png")
-        plt.savefig(outpath, dpi=300, bbox_inches="tight")
-        plt.close()
-
-        print(f"Saved tool sequence graph for model '{model}' → {outpath}")
 
 # --- Main flow ---
 if __name__ == "__main__":
@@ -1207,12 +1222,13 @@ if __name__ == "__main__":
     try:
         plot_tokens_by_agent(parsed_dir="logs/parsed", user_counts=user_counts, models=models)
         plot_tool_calls_by_model(parsed_dir="logs/parsed", user_counts=user_counts, models=models)
-        plot_mean_weighted_tool_sequence_graph(
-                            parsed_dir="logs/parsed",
-                            models=models,
-                            outdir="images/tool_sequences",
-                            min_weight=0.2
-                            )
+        plot_tool_sequence_sankey_plotly(
+    parsed_dir="logs/parsed",
+    models=models,
+    outdir="images/tool_sequences",
+    min_prop=0.05
+)
+
     except Exception as e:
         print(f"Failed to generate parsed-log plots: {e}")
     # latency boxplots (from raw latency CSVs)

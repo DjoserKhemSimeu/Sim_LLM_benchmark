@@ -3,9 +3,9 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1,2],
+  "Nb_users":[1,10],
   "Iteration":1,
-  "Models":["gemma3:4b"],
+  "Models":["gemma3:12b"],
   "gpus": {
     "0": {
       "nom": "NVIDIA GH200",
