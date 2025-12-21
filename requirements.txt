@@ -11,3 +11,5 @@ crewai==1.6.0
 bs4
 duckduckgo_search
 litellm
+plotly
+kaleido
