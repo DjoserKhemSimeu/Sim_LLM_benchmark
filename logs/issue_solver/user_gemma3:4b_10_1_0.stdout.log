@@ -1,0 +1,173 @@
+Starting User 1 Benchmark...
+╭──────────────────────────────────────────────────────────────────────────────────────────── Crew Execution Started ─────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Crew Execution Started                                                                                                                                                                                         │
+│  Name: crew                                                                                                                                                                                                     │
+│  ID: 2bdc8ec3-9ee3-4aaf-b01a-64f9087452b6                                                                                                                                                                       │
+│  Tool Args:                                                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+├── 📋 Task: 6dbf8342-21ce-4ddf-b812-3826955f2c00
+│   Status: Executing Task...
+└── 🧠 Thinking...╭─────────────────────────────────────────────────────────────────────────────────────────────── 🤖 Agent Started ────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Task: TASK-PLANNER:Fix the provided issue: clone the repo, diagnose, propose a patch, and create a PR if tests pass. The update pipeline should be the following:                                              │
+│  1. Clone the GitHub repository locally and jump into it.                                                                                                                                                       │
+│  2. Create a new branch for the changes.                                                                                                                                                                        │
+│  3. Analyze the issue and the code to identify the root of the issue.                                                                                                                                           │
+│  4. Make the necessary changes to the source code.                                                                                                                                                              │
+│  5. Run the test suite to validate the changes.                                                                                                                                                                 │
+│  6. If tests pass, commit the changes and push the branch to the remote repository.                                                                                                                             │
+│  $$$RUN_ID: USER_ID=1 NB_USER=10 MODEL=gemma3:4b ITER=0 HOST=http://127.0.0.1:53100$$$                                                                                                                          │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+🚀 Crew: crew
+└── 📋 Task: 6dbf8342-21ce-4ddf-b812-3826955f2c00
+    Status: Executing Task...
+    ├── 🔧 Used fetch_issue (1)
+    └── 🧠 Thinking...╭──────────────────────────────────────────────────────────────────────────────────────────── 🔧 Agent Tool Execution ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Agent: issue-fixer                                                                                                                                                                                             │
+│                                                                                                                                                                                                                 │
+│  Thought: Okay, let's start by cloning the repository. I need the repository URL to do that. Since I don't have that information yet, I will first use the `fetch_issue` tool to get the repository URL.        │
+│                                                                                                                                                                                                                 │
+│  Using Tool: fetch_issue                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Input ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  {                                                                                                                                                                                                              │
+│    "owner": "DjoserKhemSimeu",                                                                                                                                                                                  │
+│    "repo": "dummy_agent",                                                                                                                                                                                       │
+│    "issue_number": 1                                                                                                                                                                                            │
+│  }                                                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────────────────────── Tool Output ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                                                                                 │
+│  Bonjour,                                                                                                                                                                                                       │
+│                                                                                                                                                                                                                 │
+│  Lorsque j'exécute `app.py`, une erreur apparaît :                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      NameError: name 'c' is not defined                                                                                                                                                                         │
+│                                                                                                                                                                                                                 │
+│  La fonction `addition(a, b)` utilise `c` alors que cette variable n'existe pas.                                                                                                                                │
+│  La ligne suivante pose problème :                                                                                                                                                                              │
+│                                                                                                                                                                                                                 │
+│      return a + c                                                                                                                                                                                               │
+│                                                                                                                                                                                                                 │
+│  Solution attendue : remplacer `c` par `b`.                                                                                                                                                                     │
+│                                                                                                                                                                                                                 │
+│  Merci !                                                                                                                                                                                                        │
+│                                                                                                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+└── 📋 Task: 6dbf8342-21ce-4ddf-b812-3826955f2c00
+    Status: Executing Task...
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used git_clone (1)
+    └── 🧠 Thinking...╭────────────────────────────────────── 🔧 Agent Tool Execution ───────────────────────────────────────╮
+│                                                                                                      │
+│  Agent: issue-fixer                                                                                  │
+│                                                                                                      │
+│  Thought: Thought: I have identified the issue: a `NameError` occurs because the variable `c` is     │
+│  not defined in the `addition` function. The solution is to replace `c` with `b`. I will now clone   │
+│  the repository, create a new branch, make the change, and push the branch.                          │
+│                                                                                                      │
+│  Using Tool: git_clone                                                                               │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────── Tool Input ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  {                                                                                                   │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                      │
+│  }                                                                                                   │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────── Tool Output ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  Cloned to: dummy_agent and jumped into it                                                           │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+🚀 Crew: crew
+└── 📋 Task: 6dbf8342-21ce-4ddf-b812-3826955f2c00
+    Status: Executing Task...
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used git_clone (1)
+    └── 🧠 Thinking...╭────────────────────────────────────── 🔧 Agent Tool Execution ───────────────────────────────────────╮
+│                                                                                                      │
+│  Agent: issue-fixer                                                                                  │
+│                                                                                                      │
+│  Thought: Thought: Now that the repository is cloned, I need to create a new branch for the          │
+│  changes. I will then modify the code to fix the `NameError` and run the tests.                      │
+│                                                                                                      │
+│  Using Tool: git_clone                                                                               │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭───────────────────────────────────────────── Tool Input ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  {                                                                                                   │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git"                                      │
+│  }                                                                                                   │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────── Tool Output ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  I tried reusing the same input, I must stop using this action input. I'll try something else        │
+│  instead.                                                                                            │
+│                                                                                                      │
+│                                                                                                      │
+│                                                                                                      │
+│                                                                                                      │
+│  You ONLY have access to the following tools, and should NEVER make up tools that are not listed     │
+│  here:                                                                                               │
+│                                                                                                      │
+│  Tool Name: git_clone                                                                                │
+│  Tool Arguments: {'repo_url': {'description': 'SSH of the GitHub repository to clone', 'type':       │
+│  'str'}}                                                                                             │
+│  Tool Description: Clone a GitHub repository locally (uses the `git` CLI) and change into the        │
+│  cloned directory.                                                                                   │
+│  Tool Name: read_file                                                                                │
+│  Tool Arguments: {'path': {'description': None, 'type': 'str'}}                                      │
+│  Tool Description: Reads a file in the cloned repository and returns its content.                    │
+│  Tool Name: write_file                                                                               │
+│  Tool Arguments: {'path': {'description': None, 'type': 'str'}, 'content': {'description': None,     │
+│  'type': 'str'}}                                                                                     │
+│  Tool Description: Writes content to a file in the cloned repository (creates directories if         │
+│  needed).                                                                                            │
+│  Tool Name: run_tests                                                                                │
+│  Tool Arguments: {'pytest_args': {'description': None, 'type': 'Union[str, NoneType]'}}              │
+│  Tool Description: Runs the test suite via `pytest` if present in the repository.                    │
+│  Tool Name: git_commit                                                                               │
+│  Tool Arguments: {'message': {'description': None, 'type': 'str'}}                                   │
+│  Tool Description: Stage and commit changes in the local repository.                                 │
+│  Tool Name: git_push                                                                                 │
+│  Tool Arguments: {'force': {'description': None, 'type': 'bool'}}                                    │
+│  Tool Description: Pushes the local branch to the 'origin' remote.                                   │
+│  Tool Name: fetch_issue                                                                              │
+│  Tool Arguments: {'owner': {'description': None, 'type': 'str'}, 'repo': {'description': None,       │
+│  'type': 'str'}, 'issue_number': {'description': None, 'type': 'int'}}                               │
+│  Tool Description: Fetches issues from the GitHub API.                                               │
+│                                                                                                      │
+│  IMPORTANT: Use the following format in your response:                                               │
+│                                                                                                      │
+│  ```                                                                                                 │
+│  Thought: you should always think about what to do                                                   │
+│  Action: the action to take, only one name of [git_clone, read_file, write_file, run_tests,          │
+│  git_commit, git_push, fetch_issue], just the name, exactly as it's written.                         │
+│  Action Input: the input to the action, just a simple JSON object, enclosed in curly braces, using   │
+│  " to wrap keys and values.                                                                          │
+│  Observation: th...                                                                                  │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

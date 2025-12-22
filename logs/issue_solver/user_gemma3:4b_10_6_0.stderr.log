@@ -1,0 +1,17 @@
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
+avertissement : dépôt git embarqué ajouté : agent_env/agent_env_user_gemma3:4b_10_1_0/dummy_agent
+astuce : You've added another git repository inside your current repository.
+astuce : Clones of the outer repository will not contain the contents of
+astuce : the embedded repository and will not know how to obtain it.
+astuce : If you meant to add a submodule, use:
+astuce :
+astuce : 	git submodule add <url> agent_env/agent_env_user_gemma3:4b_10_1_0/dummy_agent
+astuce :
+astuce : If you added this path by mistake, you can remove it from the
+astuce : index with:
+astuce :
+astuce : 	git rm --cached agent_env/agent_env_user_gemma3:4b_10_1_0/dummy_agent
+astuce :
+astuce : See "git help submodule" for more information.
+astuce : Disable this message with "git config advice.addEmbeddedRepo false"
