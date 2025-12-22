@@ -16,3 +16,4 @@ astuce :
 astuce : See "git help submodule" for more information.
 astuce : Disable this message with "git config advice.addEmbeddedRepo false"
 fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.

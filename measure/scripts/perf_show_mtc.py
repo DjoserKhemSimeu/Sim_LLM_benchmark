@@ -692,7 +692,7 @@ def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
             'git_push', 'create_pr', 'fetch_issue', 'repo_tree', 'git_create_branch'
         ]
 
-    for fname in glob.glob(os.path.join(parsed_dir, "parsed_*.jsonl")):
+    for fname in glob.glob(os.path.join(parsed_dir, "results_*.jsonl")):
         try:
             with open(fname, 'r', encoding='utf-8') as f:
                 for line in f:
