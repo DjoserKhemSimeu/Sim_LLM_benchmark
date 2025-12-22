@@ -1,2 +1,5 @@
 Clonage dans 'dummy_agent'...
-Basculement sur la nouvelle branche 'fix-issue_6'
+Basculement sur la nouvelle branche 'fix-issue-1_6'
+Basculement sur la nouvelle branche 'test_gemma3-4b_10_6'
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
+fatal : 'main' n'est pas un commit et une branche 'fix-issue-1_6' ne peut pas en être créée depuis

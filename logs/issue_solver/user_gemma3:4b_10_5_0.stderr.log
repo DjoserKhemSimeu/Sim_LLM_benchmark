@@ -1,3 +1,3 @@
 Clonage dans 'dummy_agent'...
 Basculement sur la nouvelle branche 'fix-issue-1_5'
-Basculement sur la nouvelle branche 'test_gemma3-4b_10_5'
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.

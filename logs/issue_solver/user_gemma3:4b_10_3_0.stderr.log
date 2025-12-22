@@ -1,2 +1,17 @@
 Clonage dans 'dummy_agent'...
-Basculement sur la nouvelle branche 'fix/1_3'
+Basculement sur la nouvelle branche 'fix-issue-1_3'
+Traceback (most recent call last):
+  File "/home/datamove/simeud/Documents/Sim_LLM_benchmark/scripts/Git_issue_solver.py", line 477, in <module>
+    result = crew.kickoff()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 755, in kickoff
+    result = self._run_sequential_process()
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 995, in _run_sequential_process
+    return self._execute_tasks(self.tasks)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 1115, in _execute_tasks
+    return self._create_crew_output(task_outputs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/datamove/simeud/ollama/lib/python3.13/site-packages/crewai/crew.py", line 1333, in _create_crew_output
+    raise ValueError("No valid task outputs available to create crew output.")
+ValueError: No valid task outputs available to create crew output.
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.

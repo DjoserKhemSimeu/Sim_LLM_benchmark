@@ -406,7 +406,7 @@ print(f"Starting Git issue solver with user_id={ID} using model={MODEL} at host=
 # ImportError complaining about missing OPENAI_API_KEY even when we intend
 # to use an Ollama server via `base_url`.
 try:
-    llm = LLM(model=f"ollama/{MODEL}", base_url=HOST)
+    llm = LLM(model=f"ollama/{MODEL}", base_url=HOST, config={"stream": False})
 except ImportError as e:
     msg = str(e)
     # If the ImportError mentions OPENAI_API_KEY, set an empty value and retry.

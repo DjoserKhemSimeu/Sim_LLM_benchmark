@@ -1,3 +1,3 @@
 Clonage dans 'dummy_agent'...
-fatal : 'None' n'est pas un commit et une branche 'fix-issue-1_9' ne peut pas en être créée depuis
-fatal : 'None' n'est pas un commit et une branche 'fix-issue-1_9_9' ne peut pas en être créée depuis
+Basculement sur la nouvelle branche 'fix-issue-1_9'
+fatal : le chemin de destination 'dummy_agent' existe déjà et n'est pas un répertoire vide.
