@@ -169,3 +169,37 @@ Starting User 9 Benchmark...
 │                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+╭────────────────────────────────────── 🔧 Agent Tool Execution ───────────────────────────────────────╮
+│                                                                                                      │
+│  Agent: issue-fixer                                                                                  │
+│                                                                                                      │
+│  Thought: Thought: I need to clone the repository again, this time ensuring the directory exists.    │
+│                                                                                                      │
+│  Using Tool: git_clone                                                                               │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+🚀 Crew: crew
+└── 📋 Task: 78b689da-161f-4ac8-86fb-e4ec0c685628
+    Status: Executing Task...
+    ├── 🔧 Using fetch_issue (1)
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Using git_clone (2)
+    ├── 🔧 Used git_clone (2)
+    └── 🧠 Thinking...╭───────────────────────────────────────────── Tool Input ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  {                                                                                                   │
+│    "repo_url": "git@github.com:DjoserKhemSimeu/dummy_agent.git",                                     │
+│    "path": "dummy_agent"                                                                             │
+│  }                                                                                                   │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────── Tool Output ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  I tried reusing the same input, I must stop using this action input. I'll try something else        │
+│  instead.                                                                                            │
+│                                                                                                      │
+│                                                                                                      │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
