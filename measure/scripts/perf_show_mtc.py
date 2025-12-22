@@ -1060,7 +1060,7 @@ def plot_tool_sequence_sankey_plotly(
     runs = collections.defaultdict(list)
 
     # -------- PARSE LOGS (ORDER = FILE ORDER) --------
-    for fname in glob.glob(os.path.join(parsed_dir, "parsed_*.jsonl")):
+    for fname in glob.glob(os.path.join(parsed_dir, "results_*.jsonl")):
         with open(fname, "r", encoding="utf-8") as f:
             for line in f:
                 try:
