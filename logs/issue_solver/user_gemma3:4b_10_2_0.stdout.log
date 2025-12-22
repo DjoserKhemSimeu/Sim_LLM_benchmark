@@ -214,3 +214,32 @@ Après ceci, vous pouvez corriger l'identité utilisée pour cette validation av
     git commit --amend --reset-author
 
  5 files changed, 9095 insertions(+)
+🚀 Crew: crew
+└── 📋 Task: b6ad974e-81bf-4f47-9c5a-f204c3ba1df8
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used write_file (1)
+    ├── 🔧 Used git_commit (1)
+    └── 🧠 Thinking...╭────────────────────────────────────── 🔧 Agent Tool Execution ───────────────────────────────────────╮
+│                                                                                                      │
+│  Agent: issue-fixer                                                                                  │
+│                                                                                                      │
+│  Thought: Thought: I need to commit the changes and push the branch to the remote repository.        │
+│                                                                                                      │
+│  Using Tool: git_commit                                                                              │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────── Tool Input ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  {                                                                                                   │
+│    "message": "Fix: Replace c with b in addition function"                                           │
+│  }                                                                                                   │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────── Tool Output ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  Committed                                                                                           │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

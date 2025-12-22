@@ -190,3 +190,47 @@ Starting User 7 Benchmark...
 │                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+[fix/bug_1 f3b7cd6] Fix: Replace c with b in addition function
+ Committer: simeud <simeud@lig-pret16.imag.fr>
+Votre nom et votre adresse courriel ont été configurés automatiquement en se
+fondant sur votre nom d'utilisateur et le nom de votre machine. Veuillez 
+vérifier qu'ils sont corrects. Vous pouvez supprimer ce message en les 
+paramétrant explicitement. Lancez les commandes suivantes et suivez les
+instructions dans votre éditeur pour éditer votre fichier de configuration :
+
+    git config --global --edit
+
+Après ceci, vous pouvez corriger l'identité utilisée pour cette validation avec :
+
+    git commit --amend --reset-author
+
+ 3 files changed, 81 insertions(+)
+🚀 Crew: crew
+└── 📋 Task: be2ca6ed-c11d-4bb8-a595-acee3c26c741
+    Status: Executing Task...
+    ├── 🔧 Used git_clone (1)
+    ├── 🔧 Used fetch_issue (1)
+    ├── 🔧 Used write_file (1)
+    ├── 🔧 Used git_commit (1)
+    └── 🧠 Thinking...╭────────────────────────────────────── 🔧 Agent Tool Execution ───────────────────────────────────────╮
+│                                                                                                      │
+│  Agent: issue-fixer                                                                                  │
+│                                                                                                      │
+│  Thought: Thought: I need to commit the changes I made to the file.                                  │
+│                                                                                                      │
+│  Using Tool: git_commit                                                                              │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────── Tool Input ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  {                                                                                                   │
+│    "message": "Fix: Replace c with b in addition function"                                           │
+│  }                                                                                                   │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────── Tool Output ─────────────────────────────────────────────╮
+│                                                                                                      │
+│  Committed                                                                                           │
+│                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

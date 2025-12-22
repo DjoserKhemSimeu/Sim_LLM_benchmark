@@ -15,3 +15,4 @@ astuce : 	git rm --cached agent_env/agent_env_user_gemma3:4b_10_1_0/dummy_agent
 astuce :
 astuce : See "git help submodule" for more information.
 astuce : Disable this message with "git config advice.addEmbeddedRepo false"
+Basculement sur la nouvelle branche 'test_gemma3-4b_10_6'
