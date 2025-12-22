@@ -6,7 +6,7 @@ import threading
 import requests
 from pathlib import Path
 from typing import Optional, Type, List, Any, Dict
-
+import re
 from bs4 import BeautifulSoup
 import duckduckgo_search
 from pydantic import BaseModel, Field
@@ -37,20 +37,25 @@ LOG_DIR = ABS_ROOT / "logs" / "parsed"
 LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
 log_lock = threading.Lock()
 
-# --- REDÉFINITION DE LA CLASSE LLM ---
 class BenchmarkedLLM(LLM):
-    """Surcharge de LLM pour capturer les métriques sans callbacks."""
+    """Surcharge de LLM pour capturer les métriques et l'outil appelé."""
+    
     def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
         response = super().call(messages, **kwargs)
         output_text = str(response)
         prompt_text = messages[-1]['content'] if messages else ""
         
-        # Calcul du nombre de tokens (estimation robuste pour le benchmark)
+        # Extraction de l'outil appelé via Regex
+        # On cherche des patterns types : "Action: name" ou {"action": "name"}
+        tool_called = self._extract_tool_name(output_text)
+        
+        # Estimation du nombre de tokens
         nb_tokens = len(output_text.split()) * 1.3 
 
         log_entry = {
             "prompt": prompt_text,
             "output": output_text,
+            "tool_called": tool_called,
             "nb_output_token": int(nb_tokens),
             "user_id": ID,
             "nb_user": NB_USER,
@@ -66,6 +71,23 @@ class BenchmarkedLLM(LLM):
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
         return response
 
+    def _extract_tool_name(self, text: str) -> Optional[str]:
+        """Analyse le texte pour trouver l'outil que l'agent a décidé d'utiliser."""
+        # Pattern 1: Format ReAct standard "Action: [tool_name]"
+        action_match = re.search(r"Action:\s*(\w+)", text, re.IGNORECASE)
+        if action_match:
+            return action_match.group(1).strip()
+        
+        # Pattern 2: Format JSON souvent utilisé par les modèles récents
+        try:
+            # On cherche une structure JSON dans le texte
+            json_match = re.search(r"\{.*\"action\":\s*\"(\w+)\".*\}", text, re.DOTALL)
+            if json_match:
+                return json_match.group(1).strip()
+        except:
+            pass
+            
+        return None
 # --- INITIALISATION ENVIRONNEMENT ---
 agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{NB_USER}_{ID}_{ITER}')
 os.makedirs(agent_env_path, exist_ok=True)
