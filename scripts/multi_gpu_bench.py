@@ -332,18 +332,18 @@ if __name__ == "__main__":
                 except Exception:
                     port = host.replace(":", "_")
                 log_path = os.path.join(LOG_DIR, f"{port}_{model}.log")
-                if os.path.exists(log_path):
-                    try:
-                        items = parse_ollama_log.parse_log(log_path)
-                        out_path = os.path.join(parsed_out_dir, f"parsed_{port}_{model}.jsonl")
-                        with open(out_path, "w", encoding="utf-8") as outf:
-                            for it in items:
-                                outf.write(json.dumps(it, ensure_ascii=False) + "\n")
-                        log_message(f"Parsed {log_path} -> {out_path} ({len(items)} items)")
-                    except Exception as e:
-                        log_message(f"Failed parsing {log_path}: {e}")
-                else:
-                    log_message(f"Log file not found: {log_path}")
+                # if os.path.exists(log_path):
+                #     # try:
+                #     #     # items = parse_ollama_log.parse_log(log_path)
+                #     #     # out_path = os.path.join(parsed_out_dir, f"parsed_{port}_{model}.jsonl")
+                #     #     # with open(out_path, "w", encoding="utf-8") as outf:
+                #     #     #     for it in items:
+                #     #     #         outf.write(json.dumps(it, ensure_ascii=False) + "\n")
+                #     #     # log_message(f"Parsed {log_path} -> {out_path} ({len(items)} items)")
+                #     # except Exception as e:
+                #     #     log_message(f"Failed parsing {log_path}: {e}")
+                # else:
+                #     log_message(f"Log file not found: {log_path}")
         except Exception as e:
             log_message(f"Post-benchmark parsing failed: {e}")
     except KeyboardInterrupt:
