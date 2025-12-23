@@ -1,5 +1,0 @@
-gpu,model,nb_user,scope,total,usage,manufacturing
-NVIDIA A100_0_0,mistral:7b,1,per_gpu,0.37920175478089213,0.3124216284077371,0.06678012637315509
-GLOBAL,mistral:7b,1,global,0.37920175478089213,0.3124216284077371,0.06678012637315509
-GLOBAL,gpt-oss:20b,1,global,0,0,0
-GLOBAL,gemma3:12b,1,global,0,0,0

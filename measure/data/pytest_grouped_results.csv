@@ -1,7 +1,0 @@
-model,nb_users,mean_success_percent
-gemma3:12b,1,100.0
-gemma3:12b,10,100.0
-gemma3:4b,1,0.0
-gemma3:4b,10,20.0
-qwen3:12b,1,0.0
-qwen3:12b,10,0.0
