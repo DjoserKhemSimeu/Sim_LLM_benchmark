@@ -226,9 +226,12 @@ task1 = Task(
 
 crew = Crew(
     agents=[agent1],
+    model=f"ollama/{MODEL}",
     tasks=[task1],
     process=Process.sequential,
-    verbose=True
+    verbose=True,
+    planning=True,
+    planning_llm=llm
 )
 
 if __name__ == "__main__":
