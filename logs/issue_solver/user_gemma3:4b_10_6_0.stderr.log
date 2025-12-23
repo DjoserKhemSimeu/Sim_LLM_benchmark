@@ -16,3 +16,9 @@ astuce :
 astuce : See "git help submodule" for more information.
 astuce : Disable this message with "git config advice.addEmbeddedRepo false"
 Basculement sur la nouvelle branche 'test_gemma3-4b_10_6'
+remote: 
+remote: Create a pull request for 'test_gemma3-4b_10_6' on GitHub by visiting:        
+remote:      https://github.com/DjoserKhemSimeu/Sim_LLM_benchmark/pull/new/test_gemma3-4b_10_6        
+remote: 
+To github.com:DjoserKhemSimeu/Sim_LLM_benchmark.git
+ * [new branch]      test_gemma3-4b_10_6 -> test_gemma3-4b_10_6
