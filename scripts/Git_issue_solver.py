@@ -49,7 +49,7 @@ class BenchmarkedLLM(LLM):
         # On cherche des patterns types : "Action: name" ou {"action": "name"}
         tool_called = self._extract_tool_name(output_text)
         token_usage = getattr(response, 'usage', None)
-        print(f"tokens usage: {token_usage}")
+        print(f"tokens usage- response: {response}")
         if token_usage:
             # On récupère les tokens de complétion (sortie)
             nb_tokens = getattr(token_usage, 'completion_tokens', 0)
@@ -424,7 +424,7 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = BenchmarkedLLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0,stream=False)
+llm = BenchmarkedLLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0,config={"stream": False})
 
 agent1 = Agent(
     role="issue-fixer",
