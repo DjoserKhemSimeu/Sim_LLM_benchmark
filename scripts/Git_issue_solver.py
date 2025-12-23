@@ -424,7 +424,7 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = BenchmarkedLLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0,config={"stream": False})
+llm = BenchmarkedLLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, config={"stream": False})
 
 agent1 = Agent(
     role="issue-fixer",
