@@ -27,7 +27,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 def parse_args():
     p = argparse.ArgumentParser(description='Run Git issue solver agent')
     p.add_argument('--user-id', type=int, default=None)
-    p.add_argument('--host', type=str, default="http://localhost:11432")
+    p.add_argument('--host', type=str, default="http://localhost:11434")
     p.add_argument('--n_users', type=int, default=1)
     p.add_argument('--iter', type=int, default=0)
     return p.parse_args()
@@ -37,7 +37,7 @@ ID = int(args.user_id) if args.user_id is not None else 0
 HOST = args.host
 ITER = args.iter
 NB_USER = args.n_users
-MODEL = os.environ.get("BENCH_MODEL", "mistral-nemo")
+MODEL = os.environ.get("BENCH_MODEL", "gemma3:4b")
 
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
@@ -66,7 +66,7 @@ class BenchmarkCallback(BaseCallbackHandler):
             gen_info = response.generations[0][0].generation_info
             self.nb_input_token = gen_info.get("prompt_eval_count", 0)
             self.nb_output_token = gen_info.get("eval_count", 0)
-            self.eval_duration_ns = gen_info.get("eval_duration", 1)
+            self.eval_duration_ns = gen_info.get("eval_duration") or 1
         except: pass
 
     def on_tool_start(self, serialized, input_str, **kwargs):
@@ -127,7 +127,7 @@ class BenchmarkedLLM_3(LLM):
 
         # Durée + vitesse
         tps = 0.0
-        if self.callback.eval_duration_ns > 0:
+        if self.callback.eval_duration_ns and self.callback.eval_duration_ns > 0:
             tps = (self.callback.nb_output_token / self.callback.eval_duration_ns) * 1e9
         # 6. LOGGING
         print(f"User {ID} - Output tokens: {self.callback.nb_output_token}, Input tokens: {self.callback.nb_input_token}, Speed (tps): {tps:.2f}")
@@ -508,7 +508,7 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0)
+llm = LLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, num_ctx=8192)
 
 agent1 = Agent(
     role="issue-fixer",

@@ -681,6 +681,12 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
 
 
 # --- Parsed log analysis & plots (tokens by agent, tool-calls by model/user-count)
+def get_from_keys(d, keys):
+    for k in keys:
+        if k in d and d[k] is not None:
+            return d[k]
+    return None
+
 def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
     """Load parsed JSONL files and aggregate per-run token totals and tool call counts.
     Returns dict keyed by run_key=(model, nb_user, iter, user_id) -> {'tokens':int,'agent':str,'tool_counts':Counter}
@@ -706,10 +712,10 @@ def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
                         continue
                     s = json.dumps(obj, ensure_ascii=False)
                     # Prefer explicit top-level metadata if present
-                    model = obj.get('model') or obj.get('model_name') or None
-                    nb_user = obj.get('nb_user') or obj.get('nb_users') or obj.get('nbUser') or None
-                    iternum = obj.get('iter') or obj.get('iteration') or obj.get('iter_num') or None
-                    user_id = obj.get('user_id') or obj.get('user') or obj.get('userid') or None
+                    model = get_from_keys(obj, ['model', 'model_name'])
+                    nb_user = get_from_keys(obj, ['nb_user', 'nb_users', 'nbUser'])
+                    iternum = get_from_keys(obj, ['iter', 'iteration', 'iter_num', 'run_id'])
+                    user_id = get_from_keys(obj, ['user_id', 'user', 'userid', 'agent_id'])
 
                     # fallback to RUN_ID marker or filename
                     if model is None:
@@ -729,8 +735,12 @@ def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
                         user_id_int = int(user_id) if user_id is not None and str(user_id).isdigit() else None
                     except Exception:
                         user_id_int = None
+                    try:
+                        iter_int = int(iternum) if iternum is not None and str(iternum).isdigit() else None
+                    except Exception:
+                        iter_int = None
 
-                    key = (str(model), nb_user_int, iternum, user_id_int)
+                    key = (str(model), nb_user_int, iter_int, user_id_int)
                     if key not in runs:
                         runs[key] = {'tokens': 0, 'agent': 'unknown', 'tool_counts': collections.Counter()}
 
@@ -752,9 +762,7 @@ def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
                     for k in ('nb_output_token', 'nb_output_tokens', 'nb_output_token_count'):
                         if isinstance(obj.get(k), (int, float)):
                             tok += int(obj.get(k) or 0)
-                    for k in ('nb_input_token', 'nb_input_tokens', 'nb_input_token_count'):
-                        if isinstance(obj.get(k), (int, float)):
-                            tok += int(obj.get(k) or 0)
+                
 
                     # fallback to usage.* fields
                     if tok == 0 and isinstance(obj, dict):
@@ -814,6 +822,7 @@ def load_parsed_runs(parsed_dir="logs/parsed", tools_list=None):
 def plot_tokens_by_agent(parsed_dir="logs/parsed", user_counts=[1,10,100], models=None, outdir="images/combined_impact"):
     runs = load_parsed_runs(parsed_dir=parsed_dir)
     rows = []
+    print(f"Loaded {runs}")
     for (model, nb_user, iternum, uid), data in runs.items():
         if models and model not in models:
             continue
@@ -837,15 +846,14 @@ def plot_tokens_by_agent(parsed_dir="logs/parsed", user_counts=[1,10,100], model
     
     # normalize agent names and restrict to the two agents requested
     df['agent_norm'] = df['agent'].astype(str).str.upper()
-    keep_agents = ['ISSUE-FIXER', 'TASK-PLANNER']
-    df = df[df['agent_norm'].isin(keep_agents)].copy()
+    
     if df.empty:
         print("No token data for ISSUE-FIXER or TASK-PLANNER agents found in parsed runs")
         return
 
     plt.figure(figsize=(max(8, len(df['model'].unique()) * 2.0), 6))
     sns.set(style='whitegrid')
-    ax = sns.boxplot(x='model', y='tokens', hue='agent_norm', data=df, showfliers=False, hue_order=keep_agents)
+    ax = sns.boxplot(x='model', y='tokens',data=df, showfliers=False)
     ax.set_title('Tokens per agent type grouped by model (per-run distribution)')
     ax.set_xlabel('model')
     ax.set_ylabel('Total tokens (per run)')
@@ -1068,10 +1076,10 @@ def plot_tool_sequence_sankey_plotly(
                 except Exception:
                     continue
 
-                model = obj.get("model") or obj.get("model_name")
-                user = obj.get("user_id")
-                nb = obj.get("nb_user")
-                it = obj.get("iter")
+                model = get_from_keys(obj, ["model", "model_name"])
+                user = get_from_keys(obj, ["user_id", "user", "userid", "agent_id"])
+                nb = get_from_keys(obj, ["nb_user", "nb_users", "nbUser"])
+                it = get_from_keys(obj, ["iter", "iteration", "iter_num", "run_id"])
 
                 if None in (model, user, nb, it):
                     continue
