@@ -21,7 +21,7 @@ import time
 from crewai import Agent, Task, Process, Crew, LLM
 from crewai.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
-
+from litellm.utils import token_counter
 
 # --- CONFIGURATION & ARGUMENTS ---
 def parse_args():
@@ -73,79 +73,58 @@ class BenchmarkCallback(BaseCallbackHandler):
         # Capture le nom de l'outil dès qu'il est activé
         self.tool_called = serialized.get("name")
 
-
-
 class BenchmarkedLLM_3(LLM):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.callback = BenchmarkCallback()
-        self.llm_instance = ChatOllama(
-            model=self.model.replace("ollama/", ""),
-            base_url=self.base_url,
-            temperature=0.0,
-            callbacks=[self.callback],
-        )
+    def __init__(self, model, base_url, **kwargs):
+        super().__init__(model=model, base_url=base_url, **kwargs)
 
     def call(self, messages, **kwargs):
-        safe_kwargs = kwargs.copy()
-        crew_callbacks = safe_kwargs.pop("callbacks", [])
-        tools = safe_kwargs.pop("tools", None)
-        from_task = safe_kwargs.pop("from_task", False)
-        from_agent = safe_kwargs.pop("from_agent", False)
-        response_model = safe_kwargs.pop("response_model", None)
-        current_llm = self.llm_instance
+        # 1. Configuration des Stop Tokens
+        # custom_stop = ["Observation:", "Observation", "### Observation"]
+        # if "stop" in kwargs:
+        #     if isinstance(kwargs["stop"], list):
+        #         kwargs["stop"].extend(custom_stop)
+        # else:
+        #     kwargs["stop"] = custom_stop
 
-        if tools:
-            # On lie les outils à l'instance pour cet appel spécifique
-            langchain_tools = [convert_to_openai_tool(t) for t in tools]
-            current_llm = self.llm_instance.bind_tools(langchain_tools)
+        # 2. Appel au LLM et capture du temps
+        start_time = time.time()
+        
+        # CrewAI LLM.call() renvoie le texte, mais nous avons besoin des stats.
+        # On utilise litellm via la méthode parente qui peuple souvent les metadata
+        output_text = super().call(messages, **kwargs)
+        
+        duration = time.time() - start_time
 
-        custom_stop = ["Observation:", "Observation", "### Observation"]
-        print(safe_kwargs["stop"] if "stop" in safe_kwargs else "No stop tokens provided")
-        if "stop" in safe_kwargs:
-            safe_kwargs["stop"].extend(custom_stop)
-        else:
-            safe_kwargs["stop"] = custom_stop
-
+        # 3. Extraction des tokens via LiteLLM
+        # Dans CrewAI, les stats sont souvent stockées dans l'instance après l'appel
+        # ou accessibles via l'objet de réponse si on appelait litellm.completion
+        
+        # Solution robuste pour CrewAI : On récupère les stats de l'usage global si disponibles
+        # Sinon, on estime via une heuristique (ou on accède aux attributs internes)
         try:
-            response = current_llm.invoke(
-                messages, 
-                #callbacks=all_callbacks, 
-                **safe_kwargs
-            )
-            output_text = response.content
-            if not output_text.strip():
-                output_text = "I am thinking about the next step to take."
-            print(response)
-        except Exception as e:
-            print(f"❌ Erreur lors de l'appel LLM: {e}")
-            return f"Error: {str(e)}"
+            # Note: LiteLLM stocke parfois les stats dans des variables de classe ou de callback
+            # Ici on utilise une approche de secours fiable si les compteurs sont à 0
+            
+            prompt_tokens = token_counter(model=self.model, messages=messages)
+            completion_tokens = token_counter(model=self.model, text=output_text)
+        except:
+            prompt_tokens = 0
+            completion_tokens = 0
 
-        output_text = response.content
+        # 4. Calcul du TPS (vitesse)
+        tps = completion_tokens / duration if duration > 0 else 0
+
+        # 5. Format de sortie EXACT
         prompt_text = messages[-1]["content"] if messages else ""
-
-        # Durée + vitesse
-        tps = 0.0
-        if self.callback.eval_duration_ns and self.callback.eval_duration_ns > 0:
-            tps = (self.callback.nb_output_token / self.callback.eval_duration_ns) * 1e9
-        # 6. LOGGING
-        print(f"User {ID} - Output tokens: {self.callback.nb_output_token}, Input tokens: {self.callback.nb_input_token}, Speed (tps): {tps:.2f}")
-
-        # Agent label
-        agent_label = (
-            "ISSUE-FIXER"
-            if "issue-fixer" in prompt_text.lower()
-            else "TASK-PLANNER"
-        )
+        agent_label = "ISSUE-FIXER" if "issue-fixer" in prompt_text.lower() else "TASK-PLANNER"
         tool_called = self._extract_tool_name(output_text)
 
         log_entry = {
             "prompt": prompt_text,
             "output": output_text,
             "tool_called": tool_called,
-            "nb_output_token": self.callback.nb_output_token,
-            "nb_input_token": self.callback.nb_input_token,
+            "nb_output_token": completion_tokens,
+            "nb_input_token": prompt_tokens,
             "speed_tps": round(tps, 2),
             "user_id": ID,
             "nb_user": NB_USER,
@@ -155,26 +134,24 @@ class BenchmarkedLLM_3(LLM):
             "agent": agent_label
         }
 
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        # 6. Logging
         with log_lock:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
             with open(LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
+        print(f"User {ID} - {agent_label} - Tokens: {completion_tokens} Out / {prompt_tokens} In - {tps:.2f} tps")
+        
         return output_text
-    
 
     def _extract_tool_name(self, text: str) -> Optional[str]:
-        """Analyse le texte pour trouver l'outil utilisé (ReAct ou JSON)."""
         if not text: return None
-        # Pattern ReAct : "Action: name"
         action_match = re.search(r"Action:\s*(\w+)", text, re.IGNORECASE)
         if action_match:
             return action_match.group(1).strip()
-        # Pattern JSON : {"action": "name"}
         try:
             data = json.loads(text)
-            if isinstance(data, dict):
-                return data.get('action') or data.get('tool')
+            return data.get('action') or data.get('tool')
         except:
             pass
         return None
@@ -508,7 +485,7 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = LLM(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, num_ctx=8192)
+llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, num_ctx=8192)
 
 agent1 = Agent(
     role="issue-fixer",
