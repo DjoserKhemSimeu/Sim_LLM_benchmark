@@ -26,7 +26,10 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
     os.environ["BENCH_MODELS"] = json.dumps(config["Models"])
     os.environ["BENCH_ITERATION"] = str(config.get("Iteration", 10))
-    
+    os.environ["BENCH_GIT_SSH"] = config["GitHub_SSH"]
+    os.environ["BENCH_OWNER"] = config["Owner"]
+    os.environ["BENCH_REPO_NAME"] = config["Repo_Name"]
+
     model = os.environ.get("BENCH_MODEL", "mistral:7b")
     toml_config = {
         "model": model,

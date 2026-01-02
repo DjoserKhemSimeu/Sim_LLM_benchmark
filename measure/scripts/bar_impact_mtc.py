@@ -148,7 +148,7 @@ def main_impact_mtc():
             # Impact_GPU = (Impact_A100_total * F_tot_GPU) / F_tot_A100
             impact_GPU_chip_estimated = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
             impact_GPU_heatsink_estimated = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
-            impact_GPU_alpha_estimated = (a100_impacts_raw[cat]["Total"]/(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"])) * (impact_GPU_chip_estimated + impact_GPU_heatsink_estimated)
+            impact_GPU_alpha_estimated = ((a100_impacts_raw[cat]["Total"]-(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"]))/(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"])) * (impact_GPU_chip_estimated + impact_GPU_heatsink_estimated)
             impact_GPU_estimated = impact_GPU_chip_estimated + impact_GPU_heatsink_estimated + impact_GPU_alpha_estimated
 
             total_impacts[cat_short] = impact_GPU_estimated
@@ -219,7 +219,7 @@ def main_impact_mtc():
                 cs = cat.split(" - ")[0]
                 main_val = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
                 heat_val = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
-                rest_val = a100_impacts_raw[cat]["Total"] / (a100_impacts_raw[cat]["Main dies"] - a100_impacts_raw[cat]["Heatsink"]) * (main_val + heat_val)
+                rest_val = ((a100_impacts_raw[cat]["Total"] - (a100_impacts_raw[cat]["Main dies"] + a100_impacts_raw[cat]["Heatsink"])) / (a100_impacts_raw[cat]["Main dies"] + a100_impacts_raw[cat]["Heatsink"]) ) * (main_val + heat_val)
                 sum_main[cs] += main_val
                 sum_heat[cs] += heat_val
                 sum_rest[cs] += rest_val

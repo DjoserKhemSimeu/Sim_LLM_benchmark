@@ -21,13 +21,13 @@ import time
 from crewai import Agent, Task, Process, Crew, LLM
 from crewai.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
-
+from litellm.utils import token_counter
 
 # --- CONFIGURATION & ARGUMENTS ---
 def parse_args():
     p = argparse.ArgumentParser(description='Run Git issue solver agent')
     p.add_argument('--user-id', type=int, default=None)
-    p.add_argument('--host', type=str, default="http://localhost:11432")
+    p.add_argument('--host', type=str, default="http://localhost:11434")
     p.add_argument('--n_users', type=int, default=1)
     p.add_argument('--iter', type=int, default=0)
     return p.parse_args()
@@ -37,7 +37,10 @@ ID = int(args.user_id) if args.user_id is not None else 0
 HOST = args.host
 ITER = args.iter
 NB_USER = args.n_users
-MODEL = os.environ.get("BENCH_MODEL", "mistral-nemo")
+MODEL = os.environ.get("BENCH_MODEL", "gemma3:4b")
+GIT_SSH = os.environ.get("BENCH_GIT_SSH", "git@github.com:DjoserKhemSimeu/dummy_agent.git")
+OWNER = os.environ.get("BENCH_OWNER", "DjoserKhemSimeu")
+REPO_NAME = os.environ.get("BENCH_REPO_NAME", "dummy_matrix_agent")
 
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
@@ -66,86 +69,59 @@ class BenchmarkCallback(BaseCallbackHandler):
             gen_info = response.generations[0][0].generation_info
             self.nb_input_token = gen_info.get("prompt_eval_count", 0)
             self.nb_output_token = gen_info.get("eval_count", 0)
-            self.eval_duration_ns = gen_info.get("eval_duration", 1)
+            self.eval_duration_ns = gen_info.get("eval_duration") or 1
         except: pass
 
     def on_tool_start(self, serialized, input_str, **kwargs):
         # Capture le nom de l'outil dès qu'il est activé
         self.tool_called = serialized.get("name")
 
-
-
 class BenchmarkedLLM_3(LLM):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.callback = BenchmarkCallback()
-        self.llm_instance = ChatOllama(
-            model=self.model.replace("ollama/", ""),
-            base_url=self.base_url,
-            temperature=0.0,
-            callbacks=[self.callback],
-        )
+    def __init__(self, model, base_url, **kwargs):
+        super().__init__(model=model, base_url=base_url, **kwargs)
 
     def call(self, messages, **kwargs):
-        safe_kwargs = kwargs.copy()
-        crew_callbacks = safe_kwargs.pop("callbacks", [])
-        tools = safe_kwargs.pop("tools", None)
-        from_task = safe_kwargs.pop("from_task", False)
-        from_agent = safe_kwargs.pop("from_agent", False)
-        response_model = safe_kwargs.pop("response_model", None)
-        current_llm = self.llm_instance
+        
 
-        if tools:
-            # On lie les outils à l'instance pour cet appel spécifique
-            langchain_tools = [convert_to_openai_tool(t) for t in tools]
-            current_llm = self.llm_instance.bind_tools(langchain_tools)
+        # 2. Appel au LLM et capture du temps
+        start_time = time.time()
+        
+        # CrewAI LLM.call() renvoie le texte, mais nous avons besoin des stats.
+        # On utilise litellm via la méthode parente qui peuple souvent les metadata
+        output_text = super().call(messages, **kwargs)
+        
+        duration = time.time() - start_time
 
-        custom_stop = ["Observation:", "Observation", "### Observation"]
-        print(safe_kwargs["stop"] if "stop" in safe_kwargs else "No stop tokens provided")
-        if "stop" in safe_kwargs:
-            safe_kwargs["stop"].extend(custom_stop)
-        else:
-            safe_kwargs["stop"] = custom_stop
-
+        # 3. Extraction des tokens via LiteLLM
+        # Dans CrewAI, les stats sont souvent stockées dans l'instance après l'appel
+        # ou accessibles via l'objet de réponse si on appelait litellm.completion
+        
+        # Solution robuste pour CrewAI : On récupère les stats de l'usage global si disponibles
+        # Sinon, on estime via une heuristique (ou on accède aux attributs internes)
         try:
-            response = current_llm.invoke(
-                messages, 
-                #callbacks=all_callbacks, 
-                **safe_kwargs
-            )
-            output_text = response.content
-            if not output_text.strip():
-                output_text = "I am thinking about the next step to take."
-            print(response)
-        except Exception as e:
-            print(f"❌ Erreur lors de l'appel LLM: {e}")
-            return f"Error: {str(e)}"
+            # Note: LiteLLM stocke parfois les stats dans des variables de classe ou de callback
+            # Ici on utilise une approche de secours fiable si les compteurs sont à 0
+            
+            prompt_tokens = token_counter(model=self.model, messages=messages)
+            completion_tokens = token_counter(model=self.model, text=output_text)
+        except:
+            prompt_tokens = 0
+            completion_tokens = 0
 
-        output_text = response.content
+        # 4. Calcul du TPS (vitesse)
+        tps = completion_tokens / duration if duration > 0 else 0
+
+        # 5. Format de sortie EXACT
         prompt_text = messages[-1]["content"] if messages else ""
-
-        # Durée + vitesse
-        tps = 0.0
-        if self.callback.eval_duration_ns > 0:
-            tps = (self.callback.nb_output_token / self.callback.eval_duration_ns) * 1e9
-        # 6. LOGGING
-        print(f"User {ID} - Output tokens: {self.callback.nb_output_token}, Input tokens: {self.callback.nb_input_token}, Speed (tps): {tps:.2f}")
-
-        # Agent label
-        agent_label = (
-            "ISSUE-FIXER"
-            if "issue-fixer" in prompt_text.lower()
-            else "TASK-PLANNER"
-        )
+        agent_label = "ISSUE-FIXER" if "issue-fixer" in prompt_text.lower() else "TASK-PLANNER"
         tool_called = self._extract_tool_name(output_text)
 
         log_entry = {
             "prompt": prompt_text,
             "output": output_text,
             "tool_called": tool_called,
-            "nb_output_token": self.callback.nb_output_token,
-            "nb_input_token": self.callback.nb_input_token,
+            "nb_output_token": completion_tokens,
+            "nb_input_token": prompt_tokens,
             "speed_tps": round(tps, 2),
             "user_id": ID,
             "nb_user": NB_USER,
@@ -155,26 +131,24 @@ class BenchmarkedLLM_3(LLM):
             "agent": agent_label
         }
 
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        # 6. Logging
         with log_lock:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
             with open(LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
+        print(f"User {ID} - {agent_label} - Tokens: {completion_tokens} Out / {prompt_tokens} In - {tps:.2f} tps")
+        
         return output_text
-    
 
     def _extract_tool_name(self, text: str) -> Optional[str]:
-        """Analyse le texte pour trouver l'outil utilisé (ReAct ou JSON)."""
         if not text: return None
-        # Pattern ReAct : "Action: name"
         action_match = re.search(r"Action:\s*(\w+)", text, re.IGNORECASE)
         if action_match:
             return action_match.group(1).strip()
-        # Pattern JSON : {"action": "name"}
         try:
             data = json.loads(text)
-            if isinstance(data, dict):
-                return data.get('action') or data.get('tool')
+            return data.get('action') or data.get('tool')
         except:
             pass
         return None
@@ -228,7 +202,39 @@ class ReadFileTool(BaseTool):
         except Exception as e:
             return f"File read error: {e}"
 
+class EditFileInput(BaseModel):
+    path: str = Field(..., description="Chemin relatif du fichier à modifier")
+    old_content: str = Field(..., description="Le texte exact à rechercher dans le fichier")
+    new_content: str = Field(..., description="Le nouveau texte qui remplacera l'ancien")
 
+class EditFileTool(BaseTool):
+    name: str = "edit_file"
+    description: str = "Remplace un bloc de texte spécifique par un autre dans un fichier existant."
+    args_schema: Type[BaseModel] = EditFileInput
+
+    def _run(self, path: str, old_content: str, new_content: str, repo_dir: Optional[str] = None) -> str:
+        try:
+            base = Path(repo_dir) if repo_dir else Path('.')
+            p = base / path
+            
+            if not p.exists():
+                return f"Erreur : Le fichier {path} n'existe pas."
+
+            # Lecture du contenu actuel
+            content = p.read_text(encoding='utf-8')
+
+            if old_content not in content:
+                return "Erreur : Le texte à remplacer n'a pas été trouvé exactement tel quel dans le fichier."
+
+            # Remplacement
+            new_full_content = content.replace(old_content, new_content)
+            
+            # Écriture
+            p.write_text(new_full_content, encoding='utf-8')
+            return f"Fichier {path} mis à jour avec succès."
+            
+        except Exception as e:
+            return f"Erreur lors de la modification : {e}"
 class WriteFileInput(BaseModel):
     path: str = Field(..., description="Relative path in the repo to the file to write")
     content: str = Field(..., description="Content to write")
@@ -437,8 +443,8 @@ class CreatePRTool(BaseTool):
 
 
 class FetchIssueInput(BaseModel):
-    owner: str = Field(..., description="GitHub owner of the repository (DjoserKhemSimeu)")
-    repo: str = Field(..., description="Name of the GitHub repository(dummy_agent)")
+    owner: str = Field(..., description="GitHub owner of the repository")
+    repo: str = Field(..., description="Name of the GitHub repository")
     issue_number: Optional[int] = Field(None, description="Issue number (1)")
 
 
@@ -447,7 +453,7 @@ class FetchIssueTool(BaseTool):
     description: str = "Fetches issues from the GitHub API. If the repository has only one issue, returns its JSON content 'body'."
     args_schema: Type[BaseModel] = FetchIssueInput
 
-    def _run(self, owner: str = "DjoserKhemSimeu", repo: str = "dummy_agent", issue_number: Optional[int] = 1) -> str:
+    def _run(self, owner: str , repo:str, issue_number: Optional[int] = 1) -> str:
         try:
             url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
             response = requests.get(url)
@@ -508,19 +514,19 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0)
+llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, num_ctx=8192)
 
 agent1 = Agent(
     role="issue-fixer",
     goal=(
-        f"In the repository git@github.com:DjoserKhemSimeu/dummy_agent.git, resolve the GitHub issue number 1 "
-        f"locally and propose PRs. Context: run by user_id={ID}. Local environment 'dummy_agent', owner='DjoserKhemSimeu', repo='dummy_agent'."
+        f"In the repository {GIT_SSH}, resolve the GitHub issue number 1 "
+        f"locally and propose PRs. Context: run by user_id={ID}, owner='{OWNER}', repo='{REPO_NAME}'."
         f"$$$RUN_ID: USER_ID={ID} NB_USER={NB_USER} MODEL={MODEL} ITER={ITER} HOST={HOST}$$$"
     ),
     backstory=f"ISSUE-FIXER:Autonomous agent to diagnose, propose, and apply fixes on GitHub repositories. (invoked by user {ID})",
     verbose=True,
     memory=True,
-    tools=[CloneRepoTool(), ReadFileTool(), WriteFileTool(), RunTestsTool(), GitCommitTool(), GitPushTool(), CreatePRTool(), CreateBranchTool(), FetchIssueTool()],
+    tools=[CloneRepoTool(), ReadFileTool(), EditFileTool(), RunTestsTool(), GitCommitTool(), GitPushTool(), CreatePRTool(), CreateBranchTool(), FetchIssueTool()],
     allow_delegation=False,
     llm=llm,
     reasoning=False

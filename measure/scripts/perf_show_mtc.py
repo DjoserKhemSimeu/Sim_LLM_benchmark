@@ -67,7 +67,7 @@ def load_electricity_impacts(path="data/Electricity_impacts.csv", factors=["GWP"
     return {f: mapping.get(f, 0.0) for f in factors}
 
 
-def load_sucess_rates():
+def load_sucess_rates_old():
     # If a precomputed grouped results CSV exists, use it to avoid rescanning files
     cached_group = Path("measure/data/pytest_grouped_results.csv")
     if cached_group.exists():
@@ -154,7 +154,22 @@ def load_sucess_rates():
     return df_grouped
 
 
-def load_sucess_rates_old():
+def load_sucess_rates():
+
+    cached_group = Path("measure/data/pytest_grouped_results.csv")
+    if cached_group.exists():
+        try:
+            df_grouped = pd.read_csv(cached_group)
+            # ensure nb_users is integer when possible
+            if "nb_users" in df_grouped.columns:
+                try:
+                    df_grouped["nb_users"] = df_grouped["nb_users"].astype(int)
+                except Exception:
+                    pass
+            print(f"Using cached grouped results from {cached_group}")
+            return df_grouped
+        except Exception as e:
+            print(f"Failed to read cached grouped results {cached_group}: {e}. Recomputing...")
     BASE_DIR = "agent_env"
 
     # Regex pour extraire le pourcentage dans stdout

@@ -490,8 +490,8 @@ llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, 
 agent1 = Agent(
     role="issue-fixer",
     goal=(
-        f"In the repository git@github.com:DjoserKhemSimeu/dummy_agent.git, resolve the GitHub issue number 1 "
-        f"locally and propose PRs. Context: run by user_id={ID}. Local environment 'dummy_agent', owner='DjoserKhemSimeu', repo='dummy_agent'."
+        f"In the repository git@github.com:DjoserKhemSimeu/dummy_matrix_agent.git, resolve the GitHub issue number 1 "
+        f"locally and propose PRs. Context: run by user_id={ID}. Local environment 'dummy_matrix_agent', owner='DjoserKhemSimeu', repo='dummy_matrix_agent'."
         f"$$$RUN_ID: USER_ID={ID} NB_USER={NB_USER} MODEL={MODEL} ITER={ITER} HOST={HOST}$$$"
     ),
     backstory=f"ISSUE-FIXER:Autonomous agent to diagnose, propose, and apply fixes on GitHub repositories. (invoked by user {ID})",

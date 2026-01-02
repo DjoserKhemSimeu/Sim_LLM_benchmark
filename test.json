@@ -2,10 +2,13 @@
   "infra_name": "Mon_Infra_Calcul",
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
+  "GitHub_SSH": "git@github.com:DjoserKhemSimeu/dummy_agent.git",
+  "Owner":"DjoserKhemSimeu",
+  "Repo_Name":"dummy_agent",
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
+  "Nb_users":[1,5],
   "Iteration":1,
-  "Models":["gemma3:4b"],
+  "Models":["ministral-3:8b"],
   "gpus": {
     "0": {
       "nom": "NVIDIA GH200",
