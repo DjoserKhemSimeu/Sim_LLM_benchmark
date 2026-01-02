@@ -13,3 +13,5 @@ duckduckgo_search
 litellm
 plotly
 kaleido
+langchain-openai
+langchain-ollama
