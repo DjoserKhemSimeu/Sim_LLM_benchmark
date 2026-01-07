@@ -19,6 +19,7 @@ import importlib.util
 seven_years = 61320 * 3600  # seconds in 7 years (~61320 hours?) keep same as perf_show
 three_years = 26298 * 3600
 ITERATION = int(os.environ.get("BENCH_ITERATION", 10))
+REPO = os.environ.get("BENCH_REPO_NAME", "dummy_agent")   
 # --- Helpers to load inputs ---
 
 def get_gpu_info_from_env():
@@ -105,7 +106,7 @@ def load_sucess_rates_old():
         run_id = int(run_id)
 
         # Chemin vers app.py
-        app_file = os.path.join(folder_path, "dummy_agent", "app.py")
+        app_file = os.path.join(folder_path, REPO, "app.py")
 
         # Cas 1 : app.py existe → tester la fonction addition()
         if os.path.isfile(app_file):
@@ -196,7 +197,7 @@ def load_sucess_rates():
         run_id = int(run_id)
 
         # Chemin du fichier JSON
-        json_file = os.path.join(folder_path, "dummy_agent", "pytest_results.json")
+        json_file = os.path.join(folder_path, REPO, "pytest_results.json")
 
         # -------------------------------
         #  CAS 1 : fichier présent → lire
@@ -207,9 +208,12 @@ def load_sucess_rates():
                 data = json.load(f)
 
             stdout = data.get("stdout", "")
+            return_code = data.get("rc", 1)
             percent_match = percent_pattern.search(stdout)
-
-            percent = int(percent_match.group(1)) if percent_match else 0
+            if return_code != 0 or "FAILED" in stdout:
+                percent = 0
+            else:
+                percent = int(percent_match.group(1)) if percent_match else 0
         else:
             # Aucun fichier → échec complet
             percent = 0
@@ -671,7 +675,7 @@ def plot_combined_global_impact(global_impacts, factors, user_counts=[1, 10, 100
         for x_pos, gwp_val, percent in success_annotations:
             y = gwp_val + y_offset
             color = 'green' if percent > 49 else 'red'
-            ax_gwp.text(x_pos, y, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
+            #ax_gwp.text(x_pos, y, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
     except Exception:
         # if any issue placing annotations, continue without crashing
         pass
@@ -1043,7 +1047,7 @@ def plot_latency_boxplots(raw_latencies, models, user_counts=[1, 10, 100], outdi
                     percent = 0
 
                 color = 'green' if percent > 49 else 'red'
-                ax.text(positions[i], y_base + y_offset, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
+                #ax.text(positions[i], y_base + y_offset, f"{percent:.0f}%", ha='center', va='bottom', color=color, fontweight='bold')
             # expand y limits slightly to fit annotations
             new_ylim_top = ax.get_ylim()[1] + 1.5 * y_offset
             ax.set_ylim(ax.get_ylim()[0], new_ylim_top)

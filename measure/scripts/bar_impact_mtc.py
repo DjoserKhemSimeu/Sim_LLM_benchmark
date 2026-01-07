@@ -16,7 +16,7 @@ A100_REF = {
 }
 TARGET_CATEGORIES = [
     "GWP - Climate change",
-    "ADPf - Resource use, fossils",
+    "ADPe - Resource use, minerals and metals",
     "WU - Water use",
 ]
 
@@ -139,7 +139,7 @@ def main_impact_mtc():
 
         total_impacts = {"Hardware": f"{gpu['name']}_{gpu_id}", "FU": gpu["fu"], "F_tot": F_tot_GPU}
 
-        for cat in all_categories:
+        for cat in TARGET_CATEGORIES:
             cat_short = cat.split(" - ")[0]
 
             
@@ -205,7 +205,7 @@ def main_impact_mtc():
     if len(gpus) == 0:
         print("Aucun GPU détecté (BENCH_NUM_GPU=0) — pas de graphique empilé généré.")
     else:
-        cats_short = [c.split(" - ")[0] for c in all_categories]
+        cats_short = [c.split(" - ")[0] for c in TARGET_CATEGORIES]
         sum_main = {cs: 0.0 for cs in cats_short}
         sum_heat = {cs: 0.0 for cs in cats_short}
         sum_rest = {cs: 0.0 for cs in cats_short}
@@ -215,7 +215,7 @@ def main_impact_mtc():
             F_GPU_chip, F_heatsink, F_tot_GPU = calculate_proportionality_factor(gpu)
             if F_tot_GPU == 0:
                 continue
-            for cat in all_categories:
+            for cat in TARGET_CATEGORIES:
                 cs = cat.split(" - ")[0]
                 main_val = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
                 heat_val = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
@@ -246,7 +246,7 @@ def main_impact_mtc():
 
         totals_abs = (df_comp.sum(axis=1)).values
         texts = []
-        for i, cat in enumerate(all_categories):
+        for i, cat in enumerate(TARGET_CATEGORIES):
             short = cat.split(" - ")[0]
             unit = unit_map.get(cat, "")
             tot = totals_abs[i]
@@ -258,7 +258,7 @@ def main_impact_mtc():
                 f"{tot:.3g} {unit}",
                 ha="center",
                 va="bottom",
-                fontsize=9,
+                fontsize=20,
                 rotation=90,
                 fontweight="bold",
                 bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 2},
@@ -279,11 +279,10 @@ def main_impact_mtc():
             t.set_y(y_center - height_data / 2.0)
 
         ax.set_xticks(x)
-        ax.set_xticklabels(df_pct.index, rotation=90)
+        ax.set_xticklabels(df_pct.index, rotation=90,fontsize=20)
         ax.set_ylim(0, 110)
-        ax.set_ylabel("Contribution (%) — normalisé à 100% par catégorie")
-        ax.set_title("Répartition Main dies vs Heatsink par catégorie d'impact (somme des GPUs)")
-        ax.legend()
+        ax.set_ylabel("Contributions (%) ",fontsize=20)
+        ax.legend(fontsize=17)
         plt.tight_layout()
 
         outname = "manufacturing_impact_main_vs_heatsink_percent.png"
