@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -6,15 +6,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-dev \
+    python3-venv \
     git \
     wget \
     curl \
     zstd \
+    bc \
     ca-certificates \
     openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
-
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 # Installation d'Ollama
 RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_INSTALL_DIR=/usr/bin sh
 # 2. Configuration SSH pour les agents
