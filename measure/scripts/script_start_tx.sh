@@ -26,7 +26,7 @@ NUM_GPUS=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 measure_with_tegrastats() {
   local GPU_ID=$1
   local LOG_FILE="$LOG_DIR/consommation_energie_gpu_${GPU_ID}_${NB_USER}_${MODEL}_${ITER}.csv"
-  local OUTFILE="/tmp/tegrastats_out_${GPU_ID}.txt"
+  local OUTFILE="$LOG_DIR/tegrastats_out_${GPU_ID}.txt"
   local PID_FILE="$PID_DIR/nv_measure_gpu_${GPU_ID}.pid"
   pkill -f "tegrastats" || true
   rm -f "$OUTFILE"
