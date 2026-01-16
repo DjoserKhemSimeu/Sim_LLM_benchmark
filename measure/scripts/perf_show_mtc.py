@@ -233,7 +233,7 @@ def load_sucess_rates():
     #     REGROUPEMENT PAR MODEL / NB_USERS
     # ----------------------------------------
     df_grouped = (
-        df.groupby(["model", "nb_users"])["percent"]
+        df.groupby(["model"])["percent"]
         .mean()
         .reset_index()
         .rename(columns={"percent": "mean_success_percent"})
@@ -254,7 +254,7 @@ def compute_energy(power_profile):
     mask = np.isfinite(power)
     power = power[mask]
     timestamps = timestamps[mask]
-    return np.trapz(power, timestamps) / 3_600_000  # kWh
+    return np.trapezoid(power, timestamps) / 3_600_000  # kWh
 
 
 def compute_duration(power_profile):
@@ -299,7 +299,7 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
                 series_list = []
                 found_any = False
                 for it in range(ITERATION):
-                    file_path_iter = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}_{it}.csv"
+                    file_path_iter = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}_{it}.csv"
                     if os.path.isfile(file_path_iter):
                         try:
                             df = pd.read_csv(file_path_iter)
@@ -321,7 +321,7 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
 
                 # Fallback: if no iter files found, try the old single-file name
                 if not found_any:
-                    file_path = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
+                    file_path = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
                     if os.path.isfile(file_path):
                         try:
                             df = pd.read_csv(file_path)

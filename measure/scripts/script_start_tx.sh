@@ -5,12 +5,13 @@ if [ $# -ne 3 ]; then
   exit 1
 fi
 
-LOG_DIR="/tmp/save_data"
-PID_DIR="/tmp"
+LOG_DIR="save_data"
+PID_DIR="logs/pids"
 NB_USER=$1
 MODEL=$2
 ITER=$3
 mkdir -p "$LOG_DIR"
+mkdir -p "$PID_DIR"
 
 # Vérifie si tegrastats est installé
 TEGRASTATS_INSTALLED=false

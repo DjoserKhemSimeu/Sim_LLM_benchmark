@@ -1,5 +1,5 @@
 #!/bin/bash
-PID_DIR="/tmp"
+PID_DIR="logs/pids"
 PID_PATTERN="nv_measure_gpu_*.pid"
 FOUND=0
 
