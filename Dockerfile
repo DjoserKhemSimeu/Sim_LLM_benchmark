@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 # Installation d'Ollama
-RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_INSTALL_DIR=/usr/bin sh
+RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_INSTALL_DIR=/tmp sh
 # 2. Configuration SSH pour les agents
 # On désactive la vérification stricte pour que l'agent ne soit pas bloqué par
 # une question "Are you sure you want to continue connecting (yes/no)?"
@@ -34,7 +34,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 RUN crewai traces disable
 
 COPY . .
-
+ENV OLLAMA_MODELS=/tmp/ollama
 # La commande CMD doit être simple. 
 # Le montage SSH se fait lors du "docker run"
 CMD ["python3", "main.py","--config","test.json"]
