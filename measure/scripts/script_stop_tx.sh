@@ -1,21 +1,16 @@
 #!/bin/bash
 PID_DIR="logs/pids"
-PID_PATTERN="nv_measure_gpu_*.pid"
-FOUND=0
 
-# Tuer tous les processus de mesure, même sans fichier PID
-pkill -f "tegrastats --interval" || true
-pkill -f "nvidia-smi --query-gpu" || true
-pkill -f "script_start_tx" || true
+echo "Arrêt des mesures de puissance..."
 
-# Puis nettoyer les fichiers PID
-for PID_FILE in "$PID_DIR"/$PID_PATTERN; do
-  [ -e "$PID_FILE" ] || continue
-  echo "Nettoyage du fichier PID : $PID_FILE"
-  rm -f "$PID_FILE"
-  FOUND=1
-done
+# 1. Tuer les boucles nommées (très important)
+pkill -9 -f "measure_loop_gpu" || true
 
-if [ "$FOUND" -eq 0 ]; then
-  echo "Aucun fichier PID trouvé."
-fi
+# 2. Tuer les utilitaires système
+pkill -9 -f "tegrastats" || true
+pkill -9 -f "nvidia-smi --query-gpu" || true
+
+# 3. Nettoyer les fichiers PID
+rm -f "$PID_DIR"/nv_measure_gpu_*.pid
+
+echo "Nettoyage terminé."

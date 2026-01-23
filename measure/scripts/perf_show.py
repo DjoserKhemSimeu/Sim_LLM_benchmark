@@ -35,7 +35,7 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
     for gpu_id in gpus:
         for model in models:
             for nb_user in user_counts:
-                file_path = f"/tmp/save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
+                file_path = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
                 if os.path.isfile(file_path):
                     data = pd.read_csv(file_path)
                     if TEGRA == 1:

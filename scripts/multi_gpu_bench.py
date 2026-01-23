@@ -16,7 +16,7 @@ from matplotlib.ticker import MaxNLocator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from ollama import AsyncClient
-from utils.utils_file import log_message, run_back_bash_script
+from utils.utils_file import log_message, run_back_bash_script, run_front_bash_script
 import threading
 import importlib
 import json
@@ -155,7 +155,7 @@ async def benchmark(config_path, users_list):
             all_times_nested = await asyncio.gather(*tasks)
             all_times = [t for sublist in all_times_nested for t in sublist]
 
-            run_back_bash_script("measure/scripts/script_stop_tx.sh")
+            run_front_bash_script("measure/scripts/script_stop_tx.sh")
             save_times[i] = all_times
             save_delta_t[i] = [
                 dt for user in delta_t_collector for dt in delta_t_collector[user]

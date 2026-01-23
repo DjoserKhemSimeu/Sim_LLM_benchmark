@@ -31,6 +31,7 @@ fi
 # 3. Lancement du conteneur avec toutes les options
 echo "🐳 Lancement du conteneur avec accès aux 4 GPUs et SSH..."
 mkdir -p /tmp/ollama_host_storage
+mkdir -p "$(pwd)/save_data"
 docker run --gpus all -it --rm \
   --shm-size=16gb \
   -v $SSH_AUTH_SOCK:/ssh-agent \

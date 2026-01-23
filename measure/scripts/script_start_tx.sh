@@ -5,6 +5,7 @@ if [ $# -ne 3 ]; then
   exit 1
 fi
 
+
 LOG_DIR="save_data"
 PID_DIR="logs/pids"
 NB_USER=$1
@@ -69,17 +70,18 @@ measure_with_nvidia_smi() {
 
   # Lancer la boucle de mesure en arrière-plan
   (
-    START_TIME=$(date +%s.%N)
+  exec -a "measure_loop_gpu${GPU_ID}" bash -c "
+    START_TIME=\$(date +%s.%N)
     while true; do
-      CURRENT_TIME=$(date +%s.%N)
-      ELAPSED=$(echo "$CURRENT_TIME - $START_TIME" | bc)
-      POWER=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits -i "$GPU_ID")
-      echo "${ELAPSED},${POWER}" >>"$LOG_FILE"
-      sleep 0.01
-    done
-  ) &
+      CURRENT_TIME=\$(date +%s.%N)
+      ELAPSED=\$(echo \"\$CURRENT_TIME - \$START_TIME\" | bc)
+      POWER=\$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits -i $GPU_ID)
+      echo \"\${ELAPSED},\${POWER}\" >> $LOG_FILE
+      sleep 0.05
+    done"
+) &
   echo $! >"$PID_FILE"
-  echo "Mesure de puissance GPU ${GPU_ID} (nvidia-smi) lancée avec PID $(cat "$PID_FILE")"
+  echo "Mesure de puissance GPU ${GPU_ID} (nvidia-smi) lancée avec PID $(cat "$PID_FILE") avec ITER=${ITER}"
 }
 
 # Lancer une boucle pour chaque GPU
