@@ -4,11 +4,12 @@
 IMAGE_NAME="mon-benchmark-cuda"
 CONTAINER_WORKDIR="/workspace"
 
-echo "🚀 Démarrage de la configuration de l'environnement..."
-
+echo "Démarrage de la configuration de l'environnement..."
+chmod +x scripts/*.sh
+chmod +x measure/scripts/*.sh
 # 1. Gestion de l'agent SSH (pour le push/pull sans mot de passe)
 if [ -z "$SSH_AUTH_SOCK" ]; then
-    echo "🔑 Démarrage de l'agent SSH..."
+    echo "Démarrage de l'agent SSH..."
     eval $(ssh-agent -s)
 fi
 
@@ -20,16 +21,16 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. Construction de l'image Docker
-echo "🛠️ Construction de l'image Docker (cela peut prendre quelques minutes)..."
+echo "Construction de l'image Docker (cela peut prendre quelques minutes)..."
 docker build -t $IMAGE_NAME .
 
 if [ $? -ne 0 ]; then
-    echo "❌ Erreur lors du build. Vérifiez votre Dockerfile."
+    echo "Erreur lors du build. Vérifiez votre Dockerfile."
     exit 1
 fi
 
 # 3. Lancement du conteneur avec toutes les options
-echo "🐳 Lancement du conteneur avec accès aux 4 GPUs et SSH..."
+echo "Lancement du conteneur avec accès aux GPUs et SSH..."
 mkdir -p /tmp/ollama_host_storage
 mkdir -p "$(pwd)/save_data"
 docker run --gpus all -it --rm \
