@@ -4,9 +4,6 @@
 
 It supports:
 
-
-
-# Sim LLM Benchmark
 - Inference performance  
 - Energy consumption  
 - Carbon footprint (GWP)  
@@ -259,26 +256,14 @@ The `test.json` file defines the infrastructure, workload, and environmental mod
 Fields per GPU:
 
 - `name` → GPU model name (reporting only)
-- `die_area_mm2` → Silicon die area (used for embodied impact estimation)
-- `tech_node_nm` → Manufacturing node (e.g., 7, 5)
-- `tdp_w` → Thermal Design Power in watts (power envelope reference)
+- `die_area` → Silicon die area (used for embodied impact estimation)
+- `tech_node` → Manufacturing node (e.g., 7, 5)
+- `tdp` → Thermal Design Power in watts (power envelope reference)
 - `foundry` → Semiconductor manufacturer (e.g., TSMC, Samsung)
-- `memory_gb` → VRAM capacity
-- `quantity` → Number of identical GPUs used
+- `taille_memoire` → VRAM capacity
+
 
 ---
-
-## Optional Workload Parameters
-
-If defined:
-
-- `concurrent_users` → Number of simultaneous inference requests
-- `batch_size` → Requests processed per forward pass
-
-These parameters influence GPU utilization, throughput, and energy per inference.
-
----
-
 ## Example Minimal Configuration
 
 ```json
@@ -290,11 +275,11 @@ These parameters influence GPU utilization, throughput, and energy per inference
   "gpus": [
     {
       "name": "NVIDIA A100",
-      "die_area_mm2": 826,
-      "tech_node_nm": 7,
-      "tdp_w": 400,
+      "die_area": 826,
+      "tech_node": 7,
+      "tdp": 400,
       "foundry": "TSMC",
-      "memory_gb": 80,
+      "taille_memoire": 80,
       "quantity": 1
     }
   ]
