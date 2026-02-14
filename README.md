@@ -256,7 +256,7 @@ https://www.sciencedirect.com/science/article/pii/S1364032119305994
 
 # License
 
-Specify your license here (e.g., MIT, Apache 2.0).
+MIT License
 
 ---
 
