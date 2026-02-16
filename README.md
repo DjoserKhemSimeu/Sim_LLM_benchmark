@@ -1,6 +1,6 @@
 # Sim LLM Benchmark
 
-**Sim LLM Benchmark** is a tool designed to evaluate the **environmental impact of Large Language Model (LLM) inference** across different computing infrastructures.
+**Sim LLM Benchmark** is a tool designed to evaluate the **environmental impact of Agentic-AI workflows** across different computing infrastructures.
 
 It supports:
 
