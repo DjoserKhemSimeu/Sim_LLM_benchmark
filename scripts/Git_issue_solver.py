@@ -120,15 +120,20 @@ class BenchmarkedLLM_3(LLM):
             "prompt": prompt_text,
             "output": output_text,
             "tool_called": tool_called,
-            "nb_output_token": completion_tokens,
-            "nb_input_token": prompt_tokens,
             "speed_tps": round(tps, 2),
             "user_id": ID,
-            "nb_user": NB_USER,
-            "model": MODEL,
             "iter": ITER,
             "host": HOST,
-            "agent": agent_label
+            "agent": agent_label,
+            #will use for knn
+            "model": MODEL,
+            "nb_input_token": prompt_tokens,
+            #"temperature": ,
+            #"top_p": ,
+            #"top_k": ,
+            "nb_user": NB_USER,
+            "nb_output_token": completion_tokens,          
+            "inference_time" : duration  #the target 
         }
 
         # 6. Logging
