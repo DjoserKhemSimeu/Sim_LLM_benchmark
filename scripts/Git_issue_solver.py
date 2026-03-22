@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from random import random
 import subprocess
 import threading
 import requests
@@ -41,6 +42,11 @@ MODEL = os.environ.get("BENCH_MODEL", "gemma3:4b")
 GIT_SSH = os.environ.get("BENCH_GIT_SSH", "git@github.com:DjoserKhemSimeu/dummy_agent.git")
 OWNER = os.environ.get("BENCH_OWNER", "DjoserKhemSimeu")
 REPO_NAME = os.environ.get("BENCH_REPO_NAME", "dummy_matrix_agent")
+temperature = float(os.environ.get("BENCH_TEMPERATURE", "0.0"))
+topK = int(os.environ.get("BENCH_TOPK", "5"))
+topP = float(os.environ.get("BENCH_TOPP", "0.9"))
+
+#chanegr
 
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
@@ -110,11 +116,27 @@ class BenchmarkedLLM_3(LLM):
 
         # 4. Calcul du TPS (vitesse)
         tps = completion_tokens / duration if duration > 0 else 0
-
+        
         # 5. Format de sortie EXACT
         prompt_text = messages[-1]["content"] if messages else ""
         agent_label = "ISSUE-FIXER" if "issue-fixer" in prompt_text.lower() else "TASK-PLANNER"
         tool_called = self._extract_tool_name(output_text)
+        modelsDef = {
+            "gemma3:4b": 4e9,
+            "gemma3:270m": 270e6,
+            "gemma3:1b": 10e9,
+            "gemma3:12b": 12e9,
+            "gemma3:27b": 27e9,
+            "mistral:7b": 7e9,} 
+        gpuCharacteristics = {
+            "P100 ": {"tflops": 9.526},
+            "L40S ": {"tflops":91.6},
+            "X Pascal " : {"tflops": 10.97},
+            "Xp " : {"tflops": 12.15},
+            "RTX " : {"tflops": 16.31},
+            "RTX 8000 " : {"tflops": 16.31},
+            "X Pascal " : {"tflops": 10.97},
+            "X Pascal " : {"tflops": 10.97},}
 
         log_entry = {
             "prompt": prompt_text,
@@ -128,11 +150,11 @@ class BenchmarkedLLM_3(LLM):
             #will use for knn
             "model": MODEL,
             "nb_input_token": prompt_tokens,
-            #"temperature": ,
-            #"top_p": ,
-            #"top_k": ,
+            "temperature": temperature,
+            "top_p": topP,
+            "top_k": topK,
             "nb_user": NB_USER,
-            "nb_output_token": completion_tokens,          
+            "nb_output_token": completion_tokens,         
             "inference_time" : duration  #the target 
         }
 
@@ -519,7 +541,7 @@ class RepoTreeTool(BaseTool):
 
 # --- INSTANCIATION AGENTS ET CREW (VERSION INTÉGRALE) ---
 
-llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=0.0, seed=42, num_ctx=8192)
+llm = BenchmarkedLLM_3(model=f"ollama/{MODEL}", base_url=HOST, temperature=temperature, top_k=topK, top_p=topP, seed=42, num_ctx=8192)
 
 agent1 = Agent(
     role="issue-fixer",
