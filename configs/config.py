@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+from logging import config
 import os
 from utils.utils_file import run_front_bash_script
 from typing import Dict, Any
@@ -18,6 +19,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
     tegra = 0
     if shutil.which("tegrastats") is not None:
         tegra = 1
+    #changer
     os.environ["BENCH_TEGRA"] = str(tegra)
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
     os.environ["BENCH_MANUFACTURE_DATA"] = config["MANUFACTURE_DATA"]
@@ -29,13 +31,23 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_GIT_SSH"] = config["GitHub_SSH"]
     os.environ["BENCH_OWNER"] = config["Owner"]
     os.environ["BENCH_REPO_NAME"] = config["Repo_Name"]
+    temp = float(config.get("temperature", 0.0))
+    os.environ["BENCH_TEMPERATURE"] = str(temp)
+    topK = int(config.get("topK", 5))
+    os.environ["BENCH_TOPK"] = str(topK)
+    topP = float(config.get("topP", 0.9))
+    os.environ["BENCH_TOPP"] = str(topP)
+    os.environ["BENCH_GPU_MODEL"] = config["gpu_model"]
+    os.environ["BENCH_GPU_COUNT"] = str(config["gpu_count"])
 
     model = os.environ.get("BENCH_MODEL", "mistral:7b")
     toml_config = {
         "model": model,
-        "temperature": 0.0,
+        "temperature": temp, #changer
         "system_message": "You are an assistant",
         "ollama_instances": {},
+        "topK" : topK,
+        "topP" : topP,
     }
     # Pour chaque GPU, définir les variables d'environnement
     for gpu_id, gpu_info in config["gpus"].items():

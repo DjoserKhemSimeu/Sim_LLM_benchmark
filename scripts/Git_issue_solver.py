@@ -45,7 +45,8 @@ REPO_NAME = os.environ.get("BENCH_REPO_NAME", "dummy_matrix_agent")
 temperature = float(os.environ.get("BENCH_TEMPERATURE", "0.0"))
 topK = int(os.environ.get("BENCH_TOPK", "5"))
 topP = float(os.environ.get("BENCH_TOPP", "0.9"))
-
+gpu_model = os.environ.get("BENCH_GPU_MODEL", "Nvidia L40S")
+gpu_count = int(os.environ.get("BENCH_GPU_COUNT", "1"))
 #chanegr
 
 # --- GESTION DES CHEMINS ABSOLUS ---
@@ -54,6 +55,49 @@ LOG_DIR = ABS_ROOT / "logs" / "parsed"
 LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
 log_lock = threading.Lock()
 
+
+BASE = HOST
+
+def parse_parameter_size(param_str):
+    if not param_str:
+        return None
+
+    s = str(param_str).strip().upper()
+    match = re.match(r"([0-9]*\.?[0-9]+)\s*([BM])", s)
+    if not match:
+        return None
+
+    value = float(match.group(1))
+    unit = match.group(2)
+
+    return int(value * 1e9) if unit == "B" else int(value * 1e6)
+
+def get_ollama_model_param_dict():
+    r = requests.get(f"{BASE}/api/tags")
+    r.raise_for_status()
+    data = r.json()
+
+    return {
+        (m.get("name") or m.get("model")):
+        parse_parameter_size(m.get("details", {}).get("parameter_size"))
+        for m in data.get("models", [])
+    }
+            
+MODEL_PARAM_DICT = get_ollama_model_param_dict()
+    
+gpuCharacteristics = {
+        "Nvidia Tesla P100": {"fp32_tflops": 9.3, "memory_gib": 16},
+        "Nvidia L40S": {"fp32_tflops": 91.6, "memory_gib": 48},
+        "Nvidia TITAN X Pascal": {"fp32_tflops": 10.97, "memory_gib": 12},
+        "Nvidia TITAN Xp": {"fp32_tflops": 12.15, "memory_gib": 12},
+        "Nvidia TITAN RTX": {"fp32_tflops": 16.31, "memory_gib": 24},
+        "Nvidia Quadro RTX 8000": {"fp32_tflops": 16.31, "memory_gib": 48},
+        "Nvidia A5000": {"fp32_tflops": 27.77, "memory_gib": 24},
+        "Nvidia A6000": {"fp32_tflops": 38.71, "memory_gib": 48},
+        "Nvidia RTX 6000 Ada": {"fp32_tflops": 91.06, "memory_gib": 48},
+        "Nvidia L4": {"fp32_tflops": 30.29, "memory_gib": 24},
+        "Nvidia RTX PRO 6000": {"fp32_tflops": 120.0, "memory_gib": 96},
+        }
 
 
 
@@ -85,6 +129,7 @@ class BenchmarkCallback(BaseCallbackHandler):
 class BenchmarkedLLM_3(LLM):
     def __init__(self, model, base_url, **kwargs):
         super().__init__(model=model, base_url=base_url, **kwargs)
+
 
     def call(self, messages, **kwargs):
         
@@ -121,22 +166,15 @@ class BenchmarkedLLM_3(LLM):
         prompt_text = messages[-1]["content"] if messages else ""
         agent_label = "ISSUE-FIXER" if "issue-fixer" in prompt_text.lower() else "TASK-PLANNER"
         tool_called = self._extract_tool_name(output_text)
-        modelsDef = {
-            "gemma3:4b": 4e9,
-            "gemma3:270m": 270e6,
-            "gemma3:1b": 10e9,
-            "gemma3:12b": 12e9,
-            "gemma3:27b": 27e9,
-            "mistral:7b": 7e9,} 
-        gpuCharacteristics = {
-            "P100 ": {"tflops": 9.526},
-            "L40S ": {"tflops":91.6},
-            "X Pascal " : {"tflops": 10.97},
-            "Xp " : {"tflops": 12.15},
-            "RTX " : {"tflops": 16.31},
-            "RTX 8000 " : {"tflops": 16.31},
-            "X Pascal " : {"tflops": 10.97},
-            "X Pascal " : {"tflops": 10.97},}
+
+        
+        model_num_params = MODEL_PARAM_DICT.get(MODEL)
+                
+
+        gpu_info = gpuCharacteristics.get(
+            gpu_model,
+            {"fp32_tflops": None, "memory_gib": None}
+        )
 
         log_entry = {
             "prompt": prompt_text,
@@ -154,7 +192,12 @@ class BenchmarkedLLM_3(LLM):
             "top_p": topP,
             "top_k": topK,
             "nb_user": NB_USER,
-            "nb_output_token": completion_tokens,         
+            "gpu_model": gpu_model,
+            "gpu_count": gpu_count,
+            "gpu_fp32_tflops": gpu_info["fp32_tflops"],
+            "gpu_memory_gib": gpu_info["memory_gib"],
+            "model_num_params": model_num_params,
+            "nb_output_token": completion_tokens, 
             "inference_time" : duration  #the target 
         }
 
