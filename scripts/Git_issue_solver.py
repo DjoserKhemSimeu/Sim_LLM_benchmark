@@ -48,12 +48,6 @@ LOG_DIR = ABS_ROOT / "logs" / "parsed"
 LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
 log_lock = threading.Lock()
 
-# Global counters for benchmark metrics //VALENTINE
-N_LLM_CALLS = 0
-TOTAL_TOKENS = 0
-N_TOOL_CALLS = 0
-TRAJECTORY_LENGTH = 0
-SEQUENTIAL = True
 
 
 
@@ -85,9 +79,6 @@ class BenchmarkCallback(BaseCallbackHandler):
 class BenchmarkedLLM_3(LLM):
     def __init__(self, model, base_url, **kwargs):
         super().__init__(model=model, base_url=base_url, **kwargs)
-
-    def call(self, messages, **kwargs):
-        global N_LLM_CALLS, TOTAL_TOKENS, N_TOOL_CALLS, TRAJECTORY_LENGTH # Valentine
 
         # 2. Appel au LLM et capture du temps
         start_time = time.time()
@@ -122,27 +113,12 @@ class BenchmarkedLLM_3(LLM):
         agent_label = "ISSUE-FIXER" if "issue-fixer" in prompt_text.lower() else "TASK-PLANNER"
         tool_called = self._extract_tool_name(output_text)
 
-        # Update global counters // VALENTINE
-        N_LLM_CALLS += 1 
-        TOTAL_TOKENS += prompt_tokens + completion_tokens
-        if tool_called:
-            N_TOOL_CALLS += 1
-        TRAJECTORY_LENGTH = N_LLM_CALLS + N_TOOL_CALLS # pas + traj car valeurs déjà cumulées
-
-        if multiple_tools_called_in_parallel:
-            SEQUENTIAL = False
-
         log_entry = {
             "prompt": prompt_text,
             "output": output_text,
             "tool_called": tool_called,
             "nb_output_token": completion_tokens,
             "nb_input_token": prompt_tokens,
-            "T_total": TOTAL_TOKENS, #valentine
-            "N_LLM": N_LLM_CALLS, #valentine
-            "N_tool": N_TOOL_CALLS,#valentine
-            "N_trajectory": TRAJECTORY_LENGTH, #valentine
-            "Sequencial": SEQUENTIAL #Valentine
             "speed_tps": round(tps, 2),
             "user_id": ID,
             "nb_user": NB_USER,
