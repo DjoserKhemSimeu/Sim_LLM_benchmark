@@ -9,6 +9,9 @@
   "Nb_users":[1],
   "Iteration":1,
   "Models":["gemma3:12b"],
+  "temperature":0.0,
+  "topK": 5,
+  "topP": 0.9,
   "gpus": {
     "0": {
       "nom": "NVIDIA GH200",
@@ -25,8 +28,5 @@
       "gpu_fp32_tflops": 91.6,
       "gpu_memory_gib": 48
     }
-  },
-  "temperature":0.0,
-  "topK": 5,
-  "topP": 0.9
+  }
 }
