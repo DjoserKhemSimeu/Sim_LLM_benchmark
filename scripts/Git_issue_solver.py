@@ -48,6 +48,7 @@ topP = float(os.environ.get("BENCH_TOPP", "0.9"))
 gpu_model = os.environ.get("BENCH_GPU_MODEL", "Nvidia L40S")
 gpu_fp32_tflops = float(os.environ.get("BENCH_FP32_TFLOPS", "91.6"))
 gpu_memory_gib = float(os.environ.get("BENCH_GPU_MEMORY_GIB", "48"))
+gpu_num = int(os.environ.get("BENCH_NUM_GPU", "1"))
 #chanegr
 
 # --- GESTION DES CHEMINS ABSOLUS ---
@@ -193,6 +194,7 @@ class BenchmarkedLLM_3(LLM):
             "gpu_memory_gib": gpu_memory_gib,
             "model_num_params": model_num_params,
             "nb_output_token": completion_tokens, 
+            "gpu_num": gpu_num,
             "inference_time" : duration  #the target 
         }
 

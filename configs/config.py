@@ -15,7 +15,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
         config = json.load(f)
 
     # Nombre total de GPU
-    num_gpus = len(config["gpus"])
+    num_gpus = sum(int(gpu_info.get("gpu_num", 1)) for gpu_info in config["gpus"].values())
     tegra = 0
     if shutil.which("tegrastats") is not None:
         tegra = 1
@@ -41,7 +41,9 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_GPU_MODEL"] = first_gpu["gpu_model"]
     os.environ["BENCH_FP32_TFLOPS"] = str(first_gpu["gpu_fp32_tflops"])
     os.environ["BENCH_GPU_MEMORY_GIB"] = str(first_gpu["gpu_memory_gib"])
-    model = os.environ.get("BENCH_MODEL", "mistral:7b")
+    model = config["Models"][0]
+    os.environ["BENCH_MODEL"] = model
+    
     toml_config = {
         "model": model,
         "temperature": temp, #changer
@@ -50,6 +52,9 @@ def set_env_from_gpu_config(config_path: str) -> None:
         "topK" : topK,
         "topP" : topP,
     }
+
+    instance_index = 0
+
     # Pour chaque GPU, définir les variables d'environnement
     for gpu_id, gpu_info in config["gpus"].items():
         prefix = f"BENCH_GPU_{gpu_id}"
@@ -63,10 +68,13 @@ def set_env_from_gpu_config(config_path: str) -> None:
         os.environ[f"{prefix}_RELEASE_DATE"] = gpu_info["date_sortie"]
         os.environ[f"{prefix}_FU"] = gpu_info["fu"]
         os.environ[f"{prefix}_DENSITY"] = str(gpu_info["density"])
+        os.environ[f"{prefix}_GPU_NUM"] = str(gpu_info.get("gpu_num", 1))
 
-        toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(
-            gpu_id
-        )
+        gpu_count = int(gpu_info.get("gpu_num", 1))
+
+        for _ in range(gpu_count):
+            toml_config["ollama_instances"][f"127.0.0.1:{53100 + instance_index}"] = int(gpu_id)
+            instance_index += 1
 
     with open("configs/config.toml", "wb") as f:
         tomli_w.dump(toml_config, f)

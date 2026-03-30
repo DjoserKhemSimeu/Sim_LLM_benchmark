@@ -15,6 +15,7 @@
   "gpus": {
     "0": {
       "nom": "NVIDIA GH200",
+      "gpu_num" : 1,
       "die_area": 814,
       "tdp": 900,
       "density": 98300000,
