@@ -1,6 +1,7 @@
 * NVIDIA Docker installation
-** On Hydra
+** On G5K
 #+begin_example
+sudo apt update
 sudo apt install docker.io
 sudo systemctl start docker
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
@@ -12,7 +13,13 @@ sudo apt-get install -y nvidia-container-toolkit
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 #+end_example
-
+** SSH key creation:
+#+begin_example
+ssh-keygen -t ed25519 -C "votre_email@exemple.com"
+cat .ssh/id_ed25519.pub # to copy the key to your github account
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+#+end_example
 
 ** On Grid5000 (if it works)
 #+begin_example
