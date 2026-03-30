@@ -46,7 +46,8 @@ temperature = float(os.environ.get("BENCH_TEMPERATURE", "0.0"))
 topK = int(os.environ.get("BENCH_TOPK", "5"))
 topP = float(os.environ.get("BENCH_TOPP", "0.9"))
 gpu_model = os.environ.get("BENCH_GPU_MODEL", "Nvidia L40S")
-gpu_count = int(os.environ.get("BENCH_GPU_COUNT", "1"))
+gpu_fp32_tflops = float(os.environ.get("BENCH_FP32_TFLOPS", "91.6"))
+gpu_memory_gib = float(os.environ.get("BENCH_GPU_MEMORY_GIB", "48"))
 #chanegr
 
 # --- GESTION DES CHEMINS ABSOLUS ---
@@ -85,7 +86,7 @@ def get_ollama_model_param_dict():
             
 MODEL_PARAM_DICT = get_ollama_model_param_dict()
     
-gpuCharacteristics = {
+'''gpuCharacteristics = {
         "Nvidia Tesla P100": {"fp32_tflops": 9.3, "memory_gib": 16},
         "Nvidia L40S": {"fp32_tflops": 91.6, "memory_gib": 48},
         "Nvidia TITAN X Pascal": {"fp32_tflops": 10.97, "memory_gib": 12},
@@ -98,7 +99,7 @@ gpuCharacteristics = {
         "Nvidia L4": {"fp32_tflops": 30.29, "memory_gib": 24},
         "Nvidia RTX PRO 6000": {"fp32_tflops": 120.0, "memory_gib": 96},
         }
-
+'''
 
 
 class BenchmarkCallback(BaseCallbackHandler):
@@ -193,7 +194,6 @@ class BenchmarkedLLM_3(LLM):
             "top_k": topK,
             "nb_user": NB_USER,
             "gpu_model": gpu_model,
-            "gpu_count": gpu_count,
             "gpu_fp32_tflops": gpu_info["fp32_tflops"],
             "gpu_memory_gib": gpu_info["memory_gib"],
             "model_num_params": model_num_params,

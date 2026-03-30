@@ -22,7 +22,8 @@
       "date_sortie": "2024",
       "fu": "Large scale",
       "gpu_model" : "NVIDIA L40S",
-      "gpu_count": 1
+      "gpu_fp32_tflops": 91.6,
+      "gpu_memory_gib": 48
     }
   },
   "temperature":0.0,
