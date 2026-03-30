@@ -37,9 +37,10 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_TOPK"] = str(topK)
     topP = float(config.get("topP", 0.9))
     os.environ["BENCH_TOPP"] = str(topP)
-    os.environ["BENCH_GPU_MODEL"] = config["gpu_model"]
-    os.environ["BENCH_FP32_TFLOPS"] = str(config["gpu_fp32_tflops"])
-    os.environ["BENCH_GPU_MEMORY_GIB"] = str(config["gpu_memory_gib"])
+    first_gpu = config["gpus"]["0"]
+    os.environ["BENCH_GPU_MODEL"] = first_gpu["gpu_model"]
+    os.environ["BENCH_FP32_TFLOPS"] = str(first_gpu["gpu_fp32_tflops"])
+    os.environ["BENCH_GPU_MEMORY_GIB"] = str(first_gpu["gpu_memory_gib"])
     model = os.environ.get("BENCH_MODEL", "mistral:7b")
     toml_config = {
         "model": model,
