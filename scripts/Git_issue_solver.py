@@ -172,11 +172,6 @@ class BenchmarkedLLM_3(LLM):
         model_num_params = MODEL_PARAM_DICT.get(MODEL)
                 
 
-        gpu_info = gpuCharacteristics.get(
-            gpu_model,
-            {"fp32_tflops": None, "memory_gib": None}
-        )
-
         log_entry = {
             "prompt": prompt_text,
             "output": output_text,
@@ -194,8 +189,8 @@ class BenchmarkedLLM_3(LLM):
             "top_k": topK,
             "nb_user": NB_USER,
             "gpu_model": gpu_model,
-            "gpu_fp32_tflops": gpu_info["fp32_tflops"],
-            "gpu_memory_gib": gpu_info["memory_gib"],
+            "gpu_fp32_tflops": gpu_fp32_tflops,
+            "gpu_memory_gib": gpu_memory_gib,
             "model_num_params": model_num_params,
             "nb_output_token": completion_tokens, 
             "inference_time" : duration  #the target 
