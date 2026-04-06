@@ -31,11 +31,11 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_GIT_SSH"] = config["GitHub_SSH"]
     os.environ["BENCH_OWNER"] = config["Owner"]
     os.environ["BENCH_REPO_NAME"] = config["Repo_Name"]
-    temp = float(config.get("temperature", 0.0))
+    temp = str(config.get("temperature", 0.0))
     os.environ["BENCH_TEMPERATURE"] = str(temp)
-    topK = int(config.get("topK", 5))
+    topK = str(config.get("topK", 5))
     os.environ["BENCH_TOPK"] = str(topK)
-    topP = float(config.get("topP", 0.9))
+    topP = str(config.get("topP", 0.9))
     os.environ["BENCH_TOPP"] = str(topP)
     first_gpu = config["gpus"]["0"]
     os.environ["BENCH_GPU_MODEL"] = first_gpu["gpu_model"]
