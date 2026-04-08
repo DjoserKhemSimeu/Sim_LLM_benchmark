@@ -45,16 +45,18 @@ REPO_NAME = os.environ.get("BENCH_REPO_NAME", "dummy_matrix_agent")
 temperature = float(os.environ.get("BENCH_TEMPERATURE", "0.0"))
 topK = int(os.environ.get("BENCH_TOPK", "5"))
 topP = float(os.environ.get("BENCH_TOPP", "0.9"))
-gpu_model = os.environ.get("BENCH_GPU_MODEL", "Nvidia L40S")
-gpu_fp32_tflops = float(os.environ.get("BENCH_FP32_TFLOPS", "91.6"))
-gpu_memory_gib = float(os.environ.get("BENCH_GPU_MEMORY_GIB", "48"))
+gpu_model = os.environ.get("BENCH_GPU_MODEL", "Unknown")
+gpu_fp32_tflops = float(os.environ.get("BENCH_FP32_TFLOPS", "0"))
+gpu_memory_gib = float(os.environ.get("BENCH_GPU_MEMORY_GIB", "0"))
 gpu_num = int(os.environ.get("BENCH_NUM_GPU", "1"))
 #chanegr
 
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = ABS_ROOT / "logs" / "parsed"
-LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
+#LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
+combo_tag = os.environ.get("BENCH_COMBO_TAG", "default")
+LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}_{combo_tag}.jsonl"
 log_lock = threading.Lock()
 
 
@@ -87,21 +89,6 @@ def get_ollama_model_param_dict():
             
 MODEL_PARAM_DICT = get_ollama_model_param_dict()
     
-'''gpuCharacteristics = {
-        "Nvidia Tesla P100": {"fp32_tflops": 9.3, "memory_gib": 16},
-        "Nvidia L40S": {"fp32_tflops": 91.6, "memory_gib": 48},
-        "Nvidia TITAN X Pascal": {"fp32_tflops": 10.97, "memory_gib": 12},
-        "Nvidia TITAN Xp": {"fp32_tflops": 12.15, "memory_gib": 12},
-        "Nvidia TITAN RTX": {"fp32_tflops": 16.31, "memory_gib": 24},
-        "Nvidia Quadro RTX 8000": {"fp32_tflops": 16.31, "memory_gib": 48},
-        "Nvidia A5000": {"fp32_tflops": 27.77, "memory_gib": 24},
-        "Nvidia A6000": {"fp32_tflops": 38.71, "memory_gib": 48},
-        "Nvidia RTX 6000 Ada": {"fp32_tflops": 91.06, "memory_gib": 48},
-        "Nvidia L4": {"fp32_tflops": 30.29, "memory_gib": 24},
-        "Nvidia RTX PRO 6000": {"fp32_tflops": 120.0, "memory_gib": 96},
-        }
-'''
-
 
 class BenchmarkCallback(BaseCallbackHandler):
     def __init__(self):
@@ -170,8 +157,7 @@ class BenchmarkedLLM_3(LLM):
         tool_called = self._extract_tool_name(output_text)
 
         
-        model_num_params = MODEL_PARAM_DICT.get(MODEL)
-                
+        model_num_params = MODEL_PARAM_DICT.get(MODEL)        
 
         log_entry = {
             "prompt": prompt_text,
@@ -192,9 +178,9 @@ class BenchmarkedLLM_3(LLM):
             "gpu_model": gpu_model,
             "gpu_fp32_tflops": gpu_fp32_tflops,
             "gpu_memory_gib": gpu_memory_gib,
+            "gpu_num": gpu_num,
             "model_num_params": model_num_params,
             "nb_output_token": completion_tokens, 
-            "gpu_num": gpu_num,
             "inference_time" : duration  #the target 
         }
 

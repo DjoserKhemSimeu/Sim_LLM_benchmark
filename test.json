@@ -6,16 +6,14 @@
   "Owner":"DjoserKhemSimeu",
   "Repo_Name":"dummy_matrix_agent",
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
+  "Nb_users":[1, 2, 5,10, 15, 20, 50],
   "Iteration":1,
   "Models":["gemma3:12b"],
-  "temperature":0.0,
-  "topK": 5,
-  "topP": 0.9,
+  "temperature":[0.0, 0.5, 1.0],
+  "topK": [10, 20, 50],
+  "topP": [0.9, 0.95, 1.0],
   "gpus": {
-    "0": {
-      "nom": "NVIDIA GH200",
-      "gpu_num" : 1,
+    "0": {  
       "die_area": 814,
       "tdp": 900,
       "density": 98300000,
@@ -24,10 +22,7 @@
       "taille_memoire": 480,
       "foundry": "TSMC",
       "date_sortie": "2024",
-      "fu": "Large scale",
-      "gpu_model" : "NVIDIA L40S",
-      "gpu_fp32_tflops": 91.6,
-      "gpu_memory_gib": 48
+      "fu": "Large scale"
     }
   }
 }
