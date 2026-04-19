@@ -6,7 +6,7 @@
   "Owner":"DjoserKhemSimeu",
   "Repo_Name":"dummy_matrix_agent",
   "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1, 2, 5,10, 15, 20, 50],
+  "Nb_users":[1,5,10],
   "Iteration":1,
   "Models":["gemma3:12b"],
   "temperature":[0.0, 0.5, 1.0],
@@ -14,6 +14,10 @@
   "topP": [0.9, 0.95, 1.0],
   "gpus": {
     "0": {  
+      "gpu_model": "NVIDIA L4",
+      "gpu_fp32_tflops": 30.3,
+      "gpu_memory_gib": 22,
+      "gpu_num": 8,
       "die_area": 814,
       "tdp": 900,
       "density": 98300000,

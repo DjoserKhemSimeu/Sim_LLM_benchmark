@@ -11,6 +11,12 @@ import tomli_w
 from utils.utils_file import run_front_bash_script
 
 GPU_CHARACTERISTICS = {
+    "vercors16": {
+        "gpu_model": "NVIDIA L4",
+        "gpu_fp32_tflops": 30.3,
+        "gpu_memory_gib": 22,
+        "gpu_num": 8,
+    },
     "hydra": {
         "gpu_model": "NVIDIA GH200",
         "gpu_fp32_tflops": 67,
@@ -31,49 +37,6 @@ GPU_CHARACTERISTICS = {
     },
 }
 
-def detect_runtime_gpu_text() -> str:
-    # NVIDIA
-    try:
-        result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        out = result.stdout.strip()
-        if out:
-            return out
-    except Exception:
-        pass
-
-    # AMD 
-    try:
-        result = subprocess.run(
-            ["rocm-smi", "--showproductname"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        out = result.stdout.strip()
-        if out:
-            return out
-    except Exception:
-        pass
-
-    return ""
-
-def match_cluster_profile(runtime_gpu_text: str):
-    s = runtime_gpu_text.lower()
-
-    if "gh200" in s:
-        return GPU_CHARACTERISTICS["hydra"]
-    if "a100" in s and "40" in s:
-        return GPU_CHARACTERISTICS["chuc"]
-    if "mi50" in s:
-        return GPU_CHARACTERISTICS["neowise"]
-
-    return None
-
 
 def set_env_from_gpu_config(config_path: str) -> None:
     """Lit le fichier JSON et définit les variables d'environnement."""
@@ -93,19 +56,11 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_OWNER"] = config["Owner"]
     os.environ["BENCH_REPO_NAME"] = config["Repo_Name"]
 
-    runtime_gpu_text = detect_runtime_gpu_text()
-    print(f"Detected GPU text: {runtime_gpu_text}")
-
-    gpu_profile = match_cluster_profile(runtime_gpu_text)
-    if gpu_profile is None:
-        raise RuntimeError(f"Unknown GPU profile for detected text: {runtime_gpu_text}")
-
-    os.environ["BENCH_GPU_MODEL"] = gpu_profile["gpu_model"]
-    os.environ["BENCH_FP32_TFLOPS"] = str(gpu_profile["gpu_fp32_tflops"])
-    os.environ["BENCH_GPU_MEMORY_GIB"] = str(gpu_profile["gpu_memory_gib"])
-    os.environ["BENCH_NUM_GPU"] = str(gpu_profile["gpu_num"])
-
-    gpu_num = gpu_profile["gpu_num"]
+    os.environ["BENCH_GPU_MODEL"] = config["gpu_model"]
+    os.environ["BENCH_FP32_TFLOPS"] = str(config["gpu_fp32_tflops"])
+    os.environ["BENCH_GPU_MEMORY_GIB"] = str(config["gpu_memory_gib"])
+    gpu_num = config["gpu_num"]
+    os.environ["BENCH_NUM_GPU"] = str(gpu_num)
 
     temps = config.get("temperature", [0.0])
     topks = config.get("topK", [5])
@@ -117,7 +72,6 @@ def set_env_from_gpu_config(config_path: str) -> None:
         topks = [topks]
     if not isinstance(topps, list):
         topps = [topps]
-
 
     all_combinations = list(product(temps, topks, topps))
     print(f"Number of combinations: {len(all_combinations)}")
@@ -167,7 +121,6 @@ def set_env_from_gpu_config(config_path: str) -> None:
             for _ in range(gpu_count):
                 toml_config["ollama_instances"][f"127.0.0.1:{53100 + instance_index}"] = int(gpu_id)
                 instance_index += 1
-            
 
         with open("configs/config.toml", "wb") as f:
             tomli_w.dump(toml_config, f)
@@ -175,11 +128,11 @@ def set_env_from_gpu_config(config_path: str) -> None:
         run_front_bash_script("scripts/ollama-batch-servers.sh", str(gpu_num), model)
 
         subprocess.run(
-        ["python3", "scripts/multi_gpu_bench.py", "--config", "configs/config.toml"],
-        check=True,
-        env=os.environ.copy()
-)
-       
+            ["python3", "scripts/multi_gpu_bench.py", "--config", "configs/config.toml"],
+            check=True,
+            env=os.environ.copy()
+        )
+
     print("All combinations have been prepared and executed.")
 
 
