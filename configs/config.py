@@ -56,10 +56,11 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_OWNER"] = config["Owner"]
     os.environ["BENCH_REPO_NAME"] = config["Repo_Name"]
 
-    os.environ["BENCH_GPU_MODEL"] = config["gpu_model"]
-    os.environ["BENCH_FP32_TFLOPS"] = str(config["gpu_fp32_tflops"])
-    os.environ["BENCH_GPU_MEMORY_GIB"] = str(config["gpu_memory_gib"])
-    gpu_num = config["gpu_num"]
+    first_gpu = list(config["gpus"].values())[0]
+    os.environ["BENCH_GPU_MODEL"] = first_gpu["gpu_model"]
+    os.environ["BENCH_FP32_TFLOPS"] = str(first_gpu["gpu_fp32_tflops"])
+    os.environ["BENCH_GPU_MEMORY_GIB"] = str(first_gpu["gpu_memory_gib"])
+    gpu_num = first_gpu["gpu_num"]
     os.environ["BENCH_NUM_GPU"] = str(gpu_num)
 
     temps = config.get("temperature", [0.0])
