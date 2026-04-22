@@ -1,0 +1,5 @@
+,hydra,chuc,grouille
+Total_GPU_memory_GB,96,160,80
+Total_TDP,700,1600,800
+FP16_TFLOPS,267.6,311.88,155.94
+Bandwidth_TBps,3.36,1.56,1.56
