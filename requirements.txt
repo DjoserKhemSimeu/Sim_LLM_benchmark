@@ -1,5 +1,6 @@
 ollama
 tomli-w
+pyyaml
 pandas
 seaborn
 scipy

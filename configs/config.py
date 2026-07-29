@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import requests
 import os
 from utils.utils_file import run_front_bash_script
 from typing import Dict, Any
@@ -51,17 +52,29 @@ def set_env_from_gpu_config(config_path: str) -> None:
         os.environ[f"{prefix}_FU"] = gpu_info["fu"]
         os.environ[f"{prefix}_DENSITY"] = str(gpu_info["density"])
 
-        toml_config["ollama_instances"][f"127.0.0.1:{53100 + int(gpu_id)}"] = int(
+        toml_config["ollama_instances"][f"localhost:{53100 + int(gpu_id)}"] = int(
             gpu_id
         )
-
+    
     with open("configs/config.toml", "wb") as f:
         tomli_w.dump(toml_config, f)
 
     run_front_bash_script(
         "scripts/ollama-batch-servers.sh", os.environ["BENCH_NUM_GPU"], model
     )
+
     print(f"Variables d'environnement définies pour {num_gpus} GPU(s).")
+    # for gpu_id, gpu_info in config["gpus"].items():
+    #     print("Préchauffage du modèle Ollama...")
+    # try:
+    #     requests.post(f"http://localhost:{53100 + int(gpu_id)}/api/generate", json={
+    #         "model": model,
+    #         "prompt": "warmup: Are you ready to run (yes/no)?",
+    #         "stream": False
+    #     })
+    #     print("Modèle chargé en VRAM !")
+    # except Exception as e:
+    #     print(f"Erreur lors du préchauffage : {e}")
 
 
 def main():

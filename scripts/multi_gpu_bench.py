@@ -7,7 +7,7 @@ import argparse
 import subprocess
 import sys
 
-
+import requests
 import numpy as np
 import os
 import pandas as pd
@@ -35,6 +35,7 @@ lamb = 2  # Taux moyen d'arrivée (req/s)
 Max = 1  # Nb max de requêtes par utilisateur
 N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
+NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
 print_lock = threading.Lock()
 df_prompts = pd.read_csv("data/prompts.csv")
 
@@ -137,6 +138,17 @@ async def benchmark(config_path, users_list):
 
     results = {}
     delta_t_data = {}
+    for gpu_id in range(NUM_GPUS):
+        print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
+        try:
+            requests.post(f"http://localhost:{53100 + int(gpu_id)}/api/generate", json={
+                "model": model,
+                "prompt": "warmup: Are you ready to run (yes/no)?",
+                "stream": False
+            })
+            print("Modèle chargé en VRAM !")
+        except Exception as e:
+            print(f"Erreur lors du préchauffage : {e}")
 
     for n_users in users_list:
     

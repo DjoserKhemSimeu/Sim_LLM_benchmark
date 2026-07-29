@@ -8,19 +8,19 @@
   "MANUFACTURE_DATA": "more-than-carbon",
   "Nb_users":[1],
   "Iteration":1,
-  "Models":["gemma3:12b"],
+  "Models":["gemma4:12b"],
   "gpus": {
     "0": {
-      "nom": "NVIDIA GH200",
+      "nom": "H100",
       "die_area": 814,
-      "tdp": 900,
+      "tdp": 350,
       "density": 98300000,
       "tech_node": "5",
       "type_memoire": "HBM2e",
-      "taille_memoire": 480,
+      "taille_memoire": 80,
       "foundry": "TSMC",
-      "date_sortie": "2024",
-      "fu": "Large scale"
+      "date_sortie": "2022",
+      "fu": "Gamming"
     }
   }
 }
