@@ -46,3 +46,11 @@ sudo vi /etc/docker/daemon.json
 }
 sudo systemctl restart docker
 #+end_example
+ *** If : "no space left on device":
+ #+begin_example
+ sudo systemctl stop docker containerd
+ sudo mv /var/lib/containerd /tmp/containerd
+ sudo ln -s /tmp/containerd /var/lib/containerd
+ sudo systemctl start containerd docker
+ ./run.sh
+ #+end_example
