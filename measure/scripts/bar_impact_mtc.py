@@ -1,290 +1,296 @@
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import MinMaxScaler
-from math import log10
 
-# --- Paramètres A100 de Référence (tirés de l'étude ou supposés réalistes) ---
-# Ces valeurs sont nécessaires pour calculer F_tot,A100
-A100_REF = {
-    "die_area": 826,  # mm²
-    "tech_node": 7.0,  # nm
-    "mem_size": 40.0,  # GB (pour la version HBM2e standard)
-    "tdp": 400.0,  # W
-    "density": 65600000,  # Circuits Intégrés/cm² (Valeur illustrative)
+# --- Spécifications de Référence pour les GPUs de Base ---
+# Il faut impérativement renseigner les caractéristiques physiques (die_area, tdp, etc.)
+# pour chaque GPU présent dans "more-than-carbon-data.csv" qui servira de base.
+# Remarque : Les noms ici doivent correspondre à ceux de la colonne GPU_Name du CSV.
+BASE_GPUS_SPECS = {
+    "A100 SXM4 40GB": {
+        "die_area": 826.0,      
+        "tdp": 400.0,           
+        "density": 65600000.0,  
+        "mem_size": 40.0        
+    },
+    "A100 PCIe 40GB": {
+        "die_area": 826.0,      
+        "tdp": 250.0,           
+        "density": 65600000.0,  
+        "mem_size": 40.0        
+    },
+    "GH200": { 
+        "die_area": 814.0, 
+        "tdp": 700.0,
+        "density": 98300000.0,
+        "mem_size": 96.0
+    },
+    "Nvidia P100": {
+        "die_area": 610.0,  
+        "tdp": 250.0,       
+        "density": 25100000.0, 
+        "mem_size": 16.0    
+    },
+    "RTXA4500": {
+        "die_area": 628.0,
+        "tdp": 200.0,
+        "density": 45100000.0,
+        "mem_size": 20.0
+    },
+    "Titan RTX": {
+        "die_area": 754.0,
+        "tdp": 280.0,
+        "density": 24700000.0,
+        "mem_size": 24.0
+    },
+    "GEFORCE GTX 1080 Ti": {
+        "die_area": 471.0,
+        "tdp": 250.0,
+        "density": 25100000.0,
+        "mem_size": 11.0
+    },
+    "Nvidia L4": {
+        "die_area": 295.0,
+        "tdp": 72.0,
+        "density": 121000000.0,
+        "mem_size": 24.0
+    }
 }
+
 TARGET_CATEGORIES = [
     "GWP - Climate change",
     "ADPe - Resource use, minerals and metals",
     "WU - Water use",
 ]
 
-# --- Fonctions de chargement et de récupération (modifiées pour inclure densité/mem_tech_node) ---
-
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
 
 def get_gpu_info_from_env():
-    # ... (fonction légèrement modifiée pour gérer proc_density et mem_tech_node)
-    num_gpus = int(os.environ.get("BENCH_NUM_GPU", 0))
-    print(f"Num GPUs {num_gpus}")
+    num_gpus_str = os.environ.get("BENCH_NUM_GPU", "0")
+    print(f"[DEBUG MTC] Valeur brute de BENCH_NUM_GPU lue: '{num_gpus_str}'")
+    
+    try:
+        num_gpus = int(num_gpus_str)
+    except ValueError:
+        print(f"[ERREUR MTC] BENCH_NUM_GPU n'est pas un entier valide : {num_gpus_str}")
+        return {}
+        
     gpus = {}
     for gpu_id in range(num_gpus):
         prefix = f"BENCH_GPU_{gpu_id}"
         gpus[gpu_id] = {
-            "name": os.environ.get(f"{prefix}_NAME"),
-            "die_area": float(os.environ.get(f"{prefix}_DIE_AREA", 0)),  # proc_die_area
+            "name": os.environ.get(f"{prefix}_NAME", f"GPU_{gpu_id}"),
+            "die_area": float(os.environ.get(f"{prefix}_DIE_AREA", 0)), 
             "tdp": float(os.environ.get(f"{prefix}_TDP", 0)),
-            "proc_tech_node": float(os.environ.get(f"{prefix}_TECH_NODE", 0)),
-            "mem_type": os.environ.get(f"{prefix}_MEM_TYPE"),
             "mem_size": float(os.environ.get(f"{prefix}_MEM_SIZE", 0)),
-            # NOUVEAUX PARAMÈTRES NÉCESSAIRES :
-            "density": float(os.environ.get(f"{prefix}_DENSITY", A100_REF["density"])),
-            "foundry": os.environ.get(f"{prefix}_FOUNDRY"),
-            "date": int(os.environ.get(f"{prefix}_RELEASE_DATE", 0)),
-            "fu": os.environ.get(f"{prefix}_FU"),
+            "density": float(os.environ.get(f"{prefix}_DENSITY", BASE_GPUS_SPECS["A100 SXM4 40GB"]["density"])),
+            "fu": os.environ.get(f"{prefix}_FU", ""),
         }
+        print(f"[DEBUG MTC] Paramètres lus pour {prefix}: {gpus[gpu_id]}")
     return gpus
 
-
-def load_a100_impact_data(csv_path="./data/more-than-carbon-data.csv"):
-    """Charge et prépare les impacts bruts de la A100 par composant."""
-    try:
-        df_a100 = pd.read_csv(csv_path, sep=";")
-    except FileNotFoundError:
-        print(f"Erreur: Le fichier {csv_path} est introuvable.")
+def load_base_gpus_impacts():
+    """Cherche le CSV dans plusieurs dossiers courants possibles."""
+    possible_paths = [
+        "more-than-carbon-data.csv",
+        "data/more-than-carbon-data.csv",
+        "measure/data/more-than-carbon-data.csv",
+        "../data/more-than-carbon-data.csv"
+    ]
+    
+    csv_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            csv_path = path
+            break
+            
+    if csv_path is None:
+        print(f"[ERREUR CRITIQUE MTC] Fichier 'more-than-carbon-data.csv' introuvable.")
+        print(f"[DEBUG MTC] Dossier d'exécution actuel : {os.getcwd()}")
         return None, None
 
-    # Colonnes composants à sommer pour obtenir 'Total'
-    comp_cols = [
-        "Casing",
-        "Heatsink",
-        "PCB",
-        "Main dies",
-        "POP",
-        "Upstream transport",
-    ]
+    print(f"[DEBUG MTC] Chargement de la base depuis : {csv_path}")
+    df = pd.read_csv(csv_path, sep=";")
 
-    # S'assurer que les colonnes numériques sont bien converties
+    comp_cols = ["Casing", "Heatsink", "PCB", "Main dies", "POP", "Upstream transport"]
     for c in comp_cols:
-        if c in df_a100.columns:
-            df_a100[c] = pd.to_numeric(df_a100[c], errors="coerce").fillna(0.0)
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
 
-    # Calculer la colonne Total comme somme des composants sélectionnés
-    df_a100["Total"] = df_a100.loc[:, [c for c in comp_cols if c in df_a100.columns]].sum(axis=1)
+    df["Total"] = df[[c for c in comp_cols if c in df.columns]].sum(axis=1)
+    
+    base_impacts = {}
+    all_categories = df["Impact Category"].unique().tolist()
+    gpu_names = df["GPU_Name"].unique()
+    
+    for gpu_name in gpu_names:
+        if gpu_name not in BASE_GPUS_SPECS:
+            continue
+        base_impacts[gpu_name] = {}
+        df_gpu = df[df["GPU_Name"] == gpu_name].set_index("Impact Category")
+        for cat in all_categories:
+            if cat in df_gpu.index:
+                base_impacts[gpu_name][cat] = {
+                    "heatsink": df_gpu.loc[cat, "Heatsink"],
+                    "chip": df_gpu.loc[cat, "Main dies"],
+                    "total": df_gpu.loc[cat, "Total"]
+                }
+            else:
+                base_impacts[gpu_name][cat] = {"heatsink": 0.0, "chip": 0.0, "total": 0.0}
 
-    # Préparer le dict d'impacts en incluant au moins Main dies, Heatsink et Total
-    cols_to_keep = [col for col in ["Main dies", "Heatsink", "Total"] if col in df_a100.columns]
-    a100_impacts_raw = df_a100.set_index("Impact Category")[cols_to_keep].to_dict("index")
-    all_categories = df_a100["Impact Category"].tolist()
+    return base_impacts, all_categories
 
-    print("Impacts bruts A100 (Main dies, Heatsink, Total) chargés.")
-    return a100_impacts_raw, all_categories
+def compute_F_heatsink(gpu_target, base_specs, base_impacts, category):
+    impacts, dists = [], []
+    dims = ["tdp", "die_area"]
+    
+    for b_name, b_impacts_cat in base_impacts.items():
+        b_spec = base_specs[b_name]
+        F_heat_b = b_impacts_cat[category]["heatsink"]
+        
+        sum_dims = sum(gpu_target[d] / b_spec[d] for d in dims)
+        impact = (sum_dims / len(dims)) * F_heat_b
+        impacts.append(impact)
+        
+        dist = sum(abs((gpu_target[d] / b_spec[d]) - 1) for d in dims)
+        dists.append(dist)
+        
+    impacts = np.array(impacts)
+    dists = np.array(dists)
+    
+    # --- RÈGLE D'EXCLUSION POUR GPU IDENTIQUE ---
+    min_dist_idx = np.argmin(dists)
+    if dists[min_dist_idx] < 1e-6: # Si la distance est minuscule
+        pond_normalized = np.zeros_like(dists)
+        pond_normalized[min_dist_idx] = 1.0 # 100% sur ce GPU
+    else:
+        # --- TON ALGORITHME SOFTMAX ORIGINAL ---
+        pond = 1 - softmax(dists)
+        pond_normalized = pond / np.sum(pond) if np.sum(pond) > 0 else pond
+        
+    f_impacts = np.dot(impacts, pond_normalized)
+    return f_impacts
 
 
-# --- Fonction Principale avec la nouvelle logique de proportionalité ---
+def compute_F_chip(gpu_target, base_specs, base_impacts, category):
+    impacts, dists = [], []
+    dims = ["die_area", "density", "mem_size"]
+    
+    for b_name, b_impacts_cat in base_impacts.items():
+        b_spec = base_specs[b_name]
+        F_chip_b = b_impacts_cat[category]["chip"]
+        
+        sum_dims = sum(gpu_target[d] / b_spec[d] for d in dims)
+        impact = (sum_dims / len(dims)) * F_chip_b
+        impacts.append(impact)
+        
+        dist = sum(abs((gpu_target[d] / b_spec[d]) - 1) for d in dims)
+        dists.append(dist)
+        
+    impacts = np.array(impacts)
+    dists = np.array(dists)
+    
+    # --- RÈGLE D'EXCLUSION POUR GPU IDENTIQUE ---
+    min_dist_idx = np.argmin(dists)
+    if dists[min_dist_idx] < 1e-6:
+        pond_normalized = np.zeros_like(dists)
+        pond_normalized[min_dist_idx] = 1.0
+    else:
+        # --- TON ALGORITHME SOFTMAX ORIGINAL ---
+        pond = 1 - softmax(dists)
+        pond_normalized = pond / np.sum(pond) if np.sum(pond) > 0 else pond
+        
+    f_impacts = np.dot(impacts, pond_normalized)
+    return f_impacts
 
 
-def calculate_proportionality_factor(gpu, ref=A100_REF):
-    """Calcule F_GPU_chip et F_heatsink et F_tot pour un GPU donné."""
-
-    # Sécurité pour éviter la division par zéro
-    # if gpu["proc_tech_node"] == 0 or gpu["mem_tech_node"] == 0:
-    #    return 0, 0, 0
-
-    # 1. Calcul de gamma (γ)
-    # gamma = gpu["mem_tech_node"] / gpu["proc_tech_node"]
-    g1 = 0.7 # Poids pour la surface du die
-    g2 = 0.3 # Poids pour la taille de la mémoire
-    # 2. Calcul du Facteur F_GPU_chip
-    # F_GPU_chip ∝ γ(proc_die_area × proc_density) + (mem_size × mem_density) / mem_tech_node
-
-    term1_chip = (gpu["die_area"] /ref["die_area"]) # Normalisation par rapport à l'A100
-    term2_chip =  (gpu["mem_size"] / ref["mem_size"]) # Normalisation par rapport à l'A100
-    term3_chip =(gpu["density"] / ref["density"])  # Normalisation par rapport à l'A100
-    F_GPU_chip = (term1_chip + term2_chip+term3_chip)/3
-
-    # 3. Calcul du Facteur F_heatsink
-    # F_heatsink ∝ GPU_TDP
-    F_heatsink = ((gpu["tdp"]/ref["tdp"]) + (gpu["die_area"]/ref["die_area"]))/2
-    # 4. Facteur Total F_tot
-    F_tot = (F_GPU_chip + F_heatsink)/2
-
-    return F_GPU_chip, F_heatsink, F_tot
-
+def compute_alpha(gpu_target, f_heatsink_target, f_chip_target, base_specs, base_impacts, category):
+    impacts, dists = [], []
+    dims = ["tdp", "die_area", "density", "mem_size"]
+    
+    for b_name, b_impacts_cat in base_impacts.items():
+        b_spec = base_specs[b_name]
+        F_tot_b = b_impacts_cat[category]["total"]
+        F_chip_b = b_impacts_cat[category]["chip"]
+        F_heat_b = b_impacts_cat[category]["heatsink"]
+        
+        denom = b_impacts_cat[category]["chip"] + b_impacts_cat[category]["heatsink"]
+        alpha_ratio_b = (F_tot_b - denom) / denom if denom != 0 else 0
+        impact = (f_heatsink_target + f_chip_target) * alpha_ratio_b
+        impacts.append(impact)
+        
+        dist = sum(abs((gpu_target[d] / b_spec[d]) - 1) for d in dims)
+        dists.append(dist)
+        
+    impacts = np.array(impacts)
+    dists = np.array(dists)
+    
+    # --- RÈGLE D'EXCLUSION POUR GPU IDENTIQUE ---
+    min_dist_idx = np.argmin(dists)
+    if dists[min_dist_idx] < 1e-6:
+        pond_normalized = np.zeros_like(dists)
+        pond_normalized[min_dist_idx] = 1.0
+    else:
+        # --- TON ALGORITHME SOFTMAX ORIGINAL ---
+        pond = 1 - softmax(dists)
+        pond_normalized = pond / np.sum(pond) if np.sum(pond) > 0 else pond
+        
+    f_impacts = np.dot(impacts, pond_normalized)
+    return f_impacts
 
 def main_impact_mtc():
-    # --- Chargement des données A100 de référence ---
-    a100_impacts_raw, all_categories = load_a100_impact_data()
-    if not a100_impacts_raw:
+    print("\n--- [START] main_impact_mtc ---")
+    base_impacts, all_categories = load_base_gpus_impacts()
+    if not base_impacts:
+        print("[ABORT] Impossible de charger les impacts de base.")
         return
 
     gpus = get_gpu_info_from_env()
-
-
-    # --- 1. Calcul des Impacts pour TOUS les GPUs ---
+    if not gpus:
+        print("[ABORT] Aucun GPU détecté via l'environnement.")
+        return
 
     summary_data = []
 
     for gpu_id, gpu in gpus.items():
-        # 2.1. Calculer F_tot pour le GPU actuel
-        F_GPU_chip, F_heatsink, F_tot_GPU = calculate_proportionality_factor(gpu)
-        print(
-            f"\nCalcul des impacts pour le GPU {gpu['name']} (ID: {gpu_id}) avec F_tot = {F_tot_GPU:.2e}"
-        )
-        if F_tot_GPU == 0:
-            print(
-                f"Avertissement: Facteur F_tot nul pour le GPU {gpu['name']}. Skipping."
-            )
+        # Vérification stricte des variables
+        missing_vars = [d for d in ["die_area", "tdp", "mem_size", "density"] if gpu.get(d, 0) == 0]
+        if missing_vars:
+            print(f"[ATTENTION MTC] Le GPU {gpu['name']} a des variables manquantes ou à 0 : {missing_vars}. Je le saute.")
             continue
 
-        total_impacts = {"Hardware": f"{gpu['name']}_{gpu_id}", "FU": gpu["fu"], "F_tot": F_tot_GPU}
+        print(f"[INFO MTC] Calcul des impacts pour {gpu['name']} (ID: {gpu_id})...")
+        total_impacts = {"Hardware": f"{gpu['name']}_{gpu_id}", "FU": gpu["fu"]}
 
         for cat in TARGET_CATEGORIES:
             cat_short = cat.split(" - ")[0]
 
-            
+            f_heat = compute_F_heatsink(gpu, BASE_GPUS_SPECS, base_impacts, cat)
+            f_chip = compute_F_chip(gpu, BASE_GPUS_SPECS, base_impacts, cat)
+            alpha = compute_alpha(gpu, f_heat, f_chip, BASE_GPUS_SPECS, base_impacts, cat)
+            f_total = f_heat + f_chip + alpha
 
-            # 2.3. Estimer l'impact du GPU actuel par produit en croix (Proportionalité)
-            # Impact_GPU = (Impact_A100_total * F_tot_GPU) / F_tot_A100
-            impact_GPU_chip_estimated = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
-            impact_GPU_heatsink_estimated = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
-            impact_GPU_alpha_estimated = ((a100_impacts_raw[cat]["Total"]-(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"]))/(a100_impacts_raw[cat]["Main dies"]+a100_impacts_raw[cat]["Heatsink"])) * (impact_GPU_chip_estimated + impact_GPU_heatsink_estimated)
-            impact_GPU_estimated = impact_GPU_chip_estimated + impact_GPU_heatsink_estimated + impact_GPU_alpha_estimated
+            total_impacts[cat_short] = f_total
 
-            total_impacts[cat_short] = impact_GPU_estimated
-
-
-            # Sauvegarde des variables d'environnement (y compris pour GWP, ADPf, WU)
-            env_var_name = f"BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')}"
-            env_var_name_heat = (
-                f"BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')}_HEAT"
-            )
-            env_var_name_chip = (
-                f"BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')}_CHIP"
-            )
-
-            os.environ[env_var_name] = str(impact_GPU_estimated)
-            os.environ[env_var_name_heat] = str(impact_GPU_heatsink_estimated)
-            os.environ[env_var_name_chip] = str(impact_GPU_chip_estimated)
+            # Export explicite des variables d'environnement
+            os.environ[f"BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')}"] = str(f_total)
+            print(f"  -> Export: BENCH_GPU_{gpu_id}_IMPACT_{cat_short.replace(' ', '_')} = {f_total}")
 
         summary_data.append(total_impacts)
 
-    print("\n--- ✅ Calculs d'Impact Terminés (Nouvelle Proportionalité) ---")
+    if not summary_data:
+        print("[ABORT] Aucune donnée calculée (tous les GPUs ont été sautés).")
+        return
 
-    # --- 3. Affichage Récapitulatif (Concentration sur GWP, ADPf, WU) ---
-
+    # Sauvegarde CSV (optionnel, pour vérification)
+    os.makedirs("data", exist_ok=True)
     df_summary = pd.DataFrame(summary_data)
-    df_summary.to_csv("data/manufacturing_impact_summary_mtc.csv", index=False)
+    csv_cols = ["Hardware", "FU"] + [c.split(" - ")[0] for c in TARGET_CATEGORIES]
+    df_summary[csv_cols].to_csv("data/manufacturing_impact_summary_mtc.csv", index=False)
+    print("\n--- [END] main_impact_mtc. Calculs réussis ! ---")
 
-    # Identifier les colonnes d'impact qui nous intéressent + F_tot
-    impact_cols_short = [c.split(" - ")[0] for c in TARGET_CATEGORIES]
-    display_cols = ["Hardware", "FU", "F_tot"] + impact_cols_short
-
-    # Assurez-vous que les colonnes existent avant de les afficher
-    display_cols = [col for col in display_cols if col in df_summary.columns]
-    df_display = df_summary[display_cols]
-
-    # Arrondir pour une meilleure lisibilité
-    for col in impact_cols_short + ["F_tot"]:
-        if col in df_display.columns:
-            df_display[col] = df_display[col].round(4)
-
-    print(
-        "\n## 📋 Récapitulatif des Impacts de Co-conception (Méthode de Proportionalité)"
-    )
-    print(
-        "> Les valeurs sont estimées par produit en croix basé sur F_tot et l'impact A100 (Main dies + Heatsink)."
-    )
-    print(df_display.to_markdown(index=False))
-
-    # --- 4. Création d'un bar plot 100% empilé pour Main dies vs Heatsink ---
-    # Pour chaque catégorie d'impact, on somme la contribution estimée
-    # des GPUs pour Main dies et Heatsink séparément, puis on trace
-    # une barre empilée normalisée à 100% montrant les parts relatives.
-
-    if len(gpus) == 0:
-        print("Aucun GPU détecté (BENCH_NUM_GPU=0) — pas de graphique empilé généré.")
-    else:
-        cats_short = [c.split(" - ")[0] for c in TARGET_CATEGORIES]
-        sum_main = {cs: 0.0 for cs in cats_short}
-        sum_heat = {cs: 0.0 for cs in cats_short}
-        sum_rest = {cs: 0.0 for cs in cats_short}
-
-        # Somme des contributions Main dies et Heatsink sur tous les GPUs
-        for gpu_id, gpu in gpus.items():
-            F_GPU_chip, F_heatsink, F_tot_GPU = calculate_proportionality_factor(gpu)
-            if F_tot_GPU == 0:
-                continue
-            for cat in TARGET_CATEGORIES:
-                cs = cat.split(" - ")[0]
-                main_val = a100_impacts_raw[cat]["Main dies"] * F_GPU_chip
-                heat_val = a100_impacts_raw[cat]["Heatsink"] * F_heatsink
-                rest_val = ((a100_impacts_raw[cat]["Total"] - (a100_impacts_raw[cat]["Main dies"] + a100_impacts_raw[cat]["Heatsink"])) / (a100_impacts_raw[cat]["Main dies"] + a100_impacts_raw[cat]["Heatsink"]) ) * (main_val + heat_val)
-                sum_main[cs] += main_val
-                sum_heat[cs] += heat_val
-                sum_rest[cs] += rest_val
-
-        df_comp = pd.DataFrame({"Main dies": sum_main, "Heatsink": sum_heat, "Rest": sum_rest})
-
-        # Calculer pourcentages normalisés à 100% par catégorie
-        df_pct = df_comp.div(df_comp.sum(axis=1), axis=0).fillna(0) * 100
-
-        # Tracé empilé vertical par catégorie (Main dies en bas, Heatsink au-dessus)
-        fig, ax = plt.subplots(figsize=(16, 6))
-        x = range(len(df_pct))
-        colors = ["#8dd3c7", "#fb8072", "#a6cee3"]  # choix simple : vert clair / rouge clair / bleu clair
-
-        ax.bar(x, df_pct["Main dies"].values, label="Main dies (GPU chip)", color=colors[0], edgecolor="white")
-        ax.bar(x, df_pct["Heatsink"].values, bottom=df_pct["Main dies"].values, label="Heatsink", color=colors[1], edgecolor="white")
-        ax.bar(x, df_pct["Rest"].values, bottom=df_pct["Main dies"].values + df_pct["Heatsink"].values, label="Rest", color=colors[2], edgecolor="white")
-
-        # Annoter pour chaque catégorie : total absolu (Main+Heatsink) avec unité
-        try:
-            unit_map = pd.read_csv("./data/more-than-carbon-data.csv", sep=";").set_index("Impact Category")["Unit"].to_dict()
-        except Exception:
-            unit_map = {cat: "" for cat in all_categories}
-
-        totals_abs = (df_comp.sum(axis=1)).values
-        texts = []
-        for i, cat in enumerate(TARGET_CATEGORIES):
-            short = cat.split(" - ")[0]
-            unit = unit_map.get(cat, "")
-            tot = totals_abs[i]
-            y_center = df_pct.iloc[i].sum() / 2.0  # centre en % (ex: 50)
-            # On place provisoirement le texte avec va='bottom' (on ajustera ensuite)
-            t = ax.text(
-                i,
-                y_center,
-                f"{tot:.3g} {unit}",
-                ha="center",
-                va="bottom",
-                fontsize=20,
-                rotation=90,
-                fontweight="bold",
-                bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 2},
-            )
-            texts.append((t, y_center))
-
-        # Forcer le rendu pour que get_window_extent() renvoie de vraies dimensions
-        fig.canvas.draw()
-        renderer = fig.canvas.get_renderer()
-        inv = ax.transData.inverted()
-
-        # Ajuster verticalement chaque texte pour qu'il soit centré (adapté à sa hauteur)
-        for t, y_center in texts:
-            bbox_disp = t.get_window_extent(renderer=renderer)          # bbox en pixels
-            bbox_data = inv.transform_bbox(bbox_disp)                  # bbox en coordonnées de données
-            height_data = bbox_data.height                             # hauteur en unités y de l'axe
-            # Comme on a utilisé va='bottom', pour centrer on place le bas à y_center - height/2
-            t.set_y(y_center - height_data / 2.0)
-
-        ax.set_xticks(x)
-        ax.set_xticklabels(df_pct.index, rotation=90,fontsize=20)
-        ax.set_ylim(0, 110)
-        ax.set_ylabel("Contributions (%) ",fontsize=20)
-        ax.legend(fontsize=17)
-        plt.tight_layout()
-
-        outname = "manufacturing_impact_main_vs_heatsink_percent.png"
-        plt.savefig(outname, dpi=200)
-        print(f"\n✅ Bar plot 100% empilé sauvegardé : '{outname}'")
+if __name__ == "__main__":
+    main_impact_mtc()

@@ -1,17 +1,129 @@
-Impact Category;Unit;Casing;Heatsink;PCB;Main dies;POP;Upstream transport
-AP - Acidification;mol H+ eq;0.00765;0.328;0.0828;0.582;0.0431;0.0148
-GWP - Climate change;kg CO2 eq;0.881;4.8;8.14;105.0;7.49;1.98
-CTUe - Ecotoxicity, freshwater;CTUe;67.3;350.0;130.0;1340.0;96.5;18.5
-PM - EF-particulate Matter;disease occurrence;4.36e-08;2e-06;4.79e-07;3.21e-06;2.42e-07;1.17e-07
-Epf - Eutrophication, freshwater;kg P eq;5.73e-06;0.00234;2e-05;0.000327;2.32e-05;3.45e-06
-Epm - Eutrophication marine;kg N eq;0.000806;0.0054;0.00593;0.0698;0.005;0.00233
-Ept - Eutrophication, terrestrial;mol N eq;0.0088;0.0661;0.0635;0.728;0.0521;0.0239
-CTUh-c - Human toxicity, cancer;CTUh;5.35e-09;3.49e-05;3.18e-06;8.2e-08;1.68e-07;4.46e-09
-CTUh-nc - Human toxicity, non-cancer;CTUh;5.45e-07;4.61e-06;5.9e-07;5.89e-07;7.28e-08;3.68e-07
-IR - Ionising radiation, human health;kBq U-235 eq;0.0851;525.0;48.3;2.04;2.49;0.751
-LU - Land use;Pt;0.0714;5.58;0.0228;0.418;0.0295;0.0099
-ODP - Ozone depletion;kg CFC11 eq;1.87e-07;1.29e-06;2.69e-06;4.58e-05;3.22e-06;5.88e-08
-POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00291;0.0374;0.0236;0.229;0.0165;0.00785
-ADPf - Resource use, fossils;MJ;16.5;64.0;126.0;1380.0;98.0;40.6
-ADPe - Resource use, minerals and metals;kg Sb eq;5.41e-05;0.00508;0.000913;0.000161;0.000134;1.51e-06
-WU - Water use;m³;0.467;16.9;4.75;35.9;3.41;1.31
+GPU_Name;Impact Category;Unit;Casing;Heatsink;PCB;Main dies;POP;Upstream transport
+A100 SXM4 40GB;AP - Acidification;mol H+ eq;0.00765;0.328;0.0828;0.582;0.0431;0.00310
+A100 SXM4 40GB;GWP - Climate change;kg CO2 eq;0.881;4.80;8.14;105.0;7.49;0.464
+A100 SXM4 40GB;CTUe - Ecotoxicity, freshwater;CTUe;67.3;350.0;130.0;1340.0;96.5;0.312
+A100 SXM4 40GB;PM - EF-particulate Matter;disease occurrence;4.36e-08;2.00e-06;4.79e-07;3.21e-06;2.42e-07;2.67e-08
+A100 SXM4 40GB;Epf - Eutrophication, freshwater;kg P eq;5.73e-06;0.00234;2.00e-05;0.000327;2.32e-05;1.74e-07
+A100 SXM4 40GB;Epm - Eutrophication marine;kg N eq;0.000806;0.00540;0.00593;0.0698;0.00500;0.00146
+A100 SXM4 40GB;Ept - Eutrophication, terrestrial;mol N eq;0.0088;0.0661;0.0635;0.728;0.0521;0.0160
+A100 SXM4 40GB;CTUh-c - Human toxicity, cancer;CTUh;5.35e-09;3.49e-05;3.18e-06;8.20e-08;1.68e-07;8.28e-12
+A100 SXM4 40GB;CTUh-nc - Human toxicity, non-cancer;CTUh;5.45e-07;4.61e-06;5.90e-07;5.89e-07;7.28e-08;1.03e-09
+A100 SXM4 40GB;IR - Ionising radiation, human health;kBq U-235 eq;0.0851;525.0;48.3;2.04;2.49;0.00113
+A100 SXM4 40GB;LU - Land use;Pt;0.0714;5.58;0.0228;0.418;0.0295;0.00
+A100 SXM4 40GB;ODP - Ozone depletion;kg CFC11 eq;1.87e-07;1.29e-06;2.69e-06;4.58e-05;3.22e-06;7.10e-10
+A100 SXM4 40GB;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00291;0.0374;0.0236;0.229;0.0165;0.00406
+A100 SXM4 40GB;ADPf - Resource use, fossils;MJ;16.5;64.0;126.0;1380.0;98.0;6.46
+A100 SXM4 40GB;ADPe - Resource use, minerals and metals;kg Sb eq;5.41e-05;0.00508;0.000913;0.000161;0.000134;1.82e-08
+A100 SXM4 40GB;WU - Water use;m3;0.467;16.9;4.75;35.9;3.41;0.00176
+A100 PCIe 40GB;AP - Acidification;mol H+ eq;0.0190;0.106;0.0850;0.346;0.00;0.00159
+A100 PCIe 40GB;GWP - Climate change;kg CO2 eq;2.15;1.73;10.2;58.8;0.00;0.239
+A100 PCIe 40GB;CTUe - Ecotoxicity, freshwater;CTUe;159.0;116.0;158.0;718.0;0.00;0.161
+A100 PCIe 40GB;PM - EF-particulate Matter;disease occurrence;1.20e-07;6.44e-07;4.51e-07;1.90e-06;0.00;1.38e-08
+A100 PCIe 40GB;Epf - Eutrophication, freshwater;kg P eq;1.76e-05;0.000796;3.14e-05;0.000125;0.00;8.94e-08
+A100 PCIe 40GB;Epm - Eutrophication marine;kg N eq;0.00196;0.00185;0.00762;0.0388;0.00;0.000751
+A100 PCIe 40GB;Ept - Eutrophication, terrestrial;mol N eq;0.0217;0.0224;0.0813;0.407;0.00;0.00824
+A100 PCIe 40GB;CTUh-c - Human toxicity, cancer;CTUh;1.30e-08;1.14e-05;4.28e-09;7.08e-09;0.00;4.26e-12
+A100 PCIe 40GB;CTUh-nc - Human toxicity, non-cancer;CTUh;1.30e-06;1.45e-06;2.27e-07;4.44e-07;0.00;5.28e-10
+A100 PCIe 40GB;IR - Ionising radiation, human health;kBq U-235 eq;2.28;173.0;23.5;0.811;0.00;0.000581
+A100 PCIe 40GB;LU - Land use;Pt;0.0773;1.90;0.0323;0.103;0.00;0.00
+A100 PCIe 40GB;ODP - Ozone depletion;kg CFC11 eq;5.16e-07;4.19e-07;1.49e-06;1.57e-05;0.00;3.65e-10
+A100 PCIe 40GB;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00732;0.0126;0.0299;0.132;0.00;0.00209
+A100 PCIe 40GB;ADPf - Resource use, fossils;MJ;40.6;22.6;164.0;692.0;0.00;3.33
+A100 PCIe 40GB;ADPe - Resource use, minerals and metals;kg Sb eq;0.000151;0.000842;0.00277;0.00146;0.00;9.38e-09
+A100 PCIe 40GB;WU - Water use;m3;1.36;5.25;3.61;16.7;0.00;0.000905
+GH200;AP - Acidification;mol H+ eq;0.122;0.00;0.4222;1.271;0.00;0.00
+GH200;GWP - Climate change;kg CO2 eq;4.17;0.00;54.53;226.8;0.00;0.00
+GH200;CTUe - Ecotoxicity, freshwater;CTUe;299.0;0.00;698.3;2897.0;0.00;0.00
+GH200;PM - EF-particulate Matter;disease occurrence;7.68e-07;0.00;2.286e-06;7.031e-06;0.00;0.00
+GH200;Epf - Eutrophication, freshwater;kg P eq;0.000780;0.00;0.000155;0.000650;0.00;0.00
+GH200;Epm - Eutrophication marine;kg N eq;0.00361;0.00;0.03781;0.1508;0.00;0.00
+GH200;Ept - Eutrophication, terrestrial;mol N eq;0.0416;0.00;0.4036;1.571;0.00;0.00
+GH200;CTUh-c - Human toxicity, cancer;CTUh;1.11e-05;0.00;2.55e-06;2.275e-06;0.00;0.00
+GH200;CTUh-nc - Human toxicity, non-cancer;CTUh;1.50e-06;0.00;2.95e-06;1.714e-06;0.00;0.00
+GH200;IR - Ionising radiation, human health;kBq U-235 eq;168.0;0.00;47.03;33.94;0.00;0.00
+GH200;LU - Land use;Pt;1.84;0.00;0.119;0.9024;0.00;0.00
+GH200;ODP - Ozone depletion;kg CFC11 eq;7.49e-07;0.00;7.294e-06;9.90e-05;0.00;0.00
+GH200;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.0188;0.00;0.1397;0.4944;0.00;0.00
+GH200;ADPf - Resource use, fossils;MJ;64.2;0.00;647.8;2958.0;0.00;0.00
+GH200;ADPe - Resource use, minerals and metals;kg Sb eq;0.000818;0.00;0.02293;0.003242;0.00;0.00
+GH200;WU - Water use;m3;5.53;0.00;21.48;80.38;0.00;0.00
+Nvidia P100;AP - Acidification;mol H+ eq;0.00370;0.134;0.0943;0.278;0.00;0.00152
+Nvidia P100;GWP - Climate change;kg CO2 eq;0.961;2.18;11.4;50.5;0.00;0.227
+Nvidia P100;CTUe - Ecotoxicity, freshwater;CTUe;10.2;146.0;173.0;645.0;0.00;0.153
+Nvidia P100;PM - EF-particulate Matter;disease occurrence;2.24e-08;8.12e-07;4.89e-07;1.54e-06;0.00;1.31e-08
+Nvidia P100;Epf - Eutrophication, freshwater;kg P eq;2.12e-06;0.00100;4.67e-05;0.000157;0.00;8.51e-08
+Nvidia P100;Epm - Eutrophication marine;kg N eq;0.000553;0.00233;0.00846;0.0335;0.00;0.000715
+Nvidia P100;Ept - Eutrophication, terrestrial;mol N eq;0.00605;0.0282;0.0902;0.349;0.00;0.00785
+Nvidia P100;CTUh-c - Human toxicity, cancer;CTUh;5.73e-09;1.44e-05;5.59e-09;4.73e-09;0.00;4.06e-12
+Nvidia P100;CTUh-nc - Human toxicity, non-cancer;CTUh;1.25e-08;1.83e-06;3.10e-07;2.74e-07;0.00;5.02e-10
+Nvidia P100;IR - Ionising radiation, human health;kBq U-235 eq;0.135;218.0;2.18;0.423;0.00;0.000553
+Nvidia P100;LU - Land use;Pt;0.339;2.39;0.0559;0.201;0.00;0.00
+Nvidia P100;ODP - Ozone depletion;kg CFC11 eq;1.01e-08;5.28e-07;1.61e-06;2.20e-05;0.00;3.48e-10
+Nvidia P100;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00208;0.0159;0.0328;0.110;0.00;0.00199
+Nvidia P100;ADPf - Resource use, fossils;MJ;20.9;28.5;177.0;660.0;0.00;3.17
+Nvidia P100;ADPe - Resource use, minerals and metals;kg Sb eq;2.09e-07;0.00106;0.00359;1.40e-06;0.00;8.93e-09
+Nvidia P100;WU - Water use;m3;0.167;6.62;4.78;19.3;0.00;0.000862
+RTXA4500;AP - Acidification;mol H+ eq;0.00375;0.105;0.0674;0.462;0.00;0.00169
+RTXA4500;GWP - Climate change;kg CO2 eq;0.914;10.3;7.96;80.2;0.00;0.253
+RTXA4500;CTUe - Ecotoxicity, freshwater;CTUe;3.46;1050.0;125.0;994.0;0.00;0.170
+RTXA4500;PM - EF-particulate Matter;disease occurrence;1.88e-08;8.42e-07;3.54e-07;2.55e-06;0.00;1.46e-08
+RTXA4500;Epf - Eutrophication, freshwater;kg P eq;1.28e-07;0.000196;2.91e-05;0.000197;0.00;9.47e-08
+RTXA4500;Epm - Eutrophication marine;kg N eq;0.000557;0.00740;0.00600;0.0530;0.00;0.000796
+RTXA4500;Ept - Eutrophication, terrestrial;mol N eq;0.00608;0.0815;0.0639;0.555;0.00;0.00873
+RTXA4500;CTUh-c - Human toxicity, cancer;CTUh;9.71e-11;2.05e-06;3.78e-09;8.94e-09;0.00;4.52e-12
+RTXA4500;CTUh-nc - Human toxicity, non-cancer;CTUh;1.84e-08;3.58e-07;2.24e-07;5.49e-07;0.00;5.59e-10
+RTXA4500;IR - Ionising radiation, human health;kBq U-235 eq;0.00155;38.6;6.11;0.962;0.00;0.000615
+RTXA4500;LU - Land use;Pt;0.00;0.317;0.0314;0.201;0.00;0.00
+RTXA4500;ODP - Ozone depletion;kg CFC11 eq;1.57e-09;1.96e-06;1.15e-06;2.60e-05;0.00;3.87e-10
+RTXA4500;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00220;0.0284;0.0234;0.178;0.00;0.00221
+RTXA4500;ADPf - Resource use, fossils;MJ;60.1;178.0;129.0;979.0;0.00;3.52
+RTXA4500;ADPe - Resource use, minerals and metals;kg Sb eq;2.98e-08;0.000209;0.00278;0.00133;0.00;9.94e-09
+RTXA4500;WU - Water use;m3;0.306;3.16;3.08;23.4;0.00;0.000959
+Titan RTX;AP - Acidification;mol H+ eq;0.0147;0.0247;0.108;0.595;0.00;0.00146
+Titan RTX;GWP - Climate change;kg CO2 eq;4.01;1.72;13.3;104.0;0.00;0.219
+Titan RTX;CTUe - Ecotoxicity, freshwater;CTUe;9.10;39.9;200.0;1290.0;0.00;0.147
+Titan RTX;PM - EF-particulate Matter;disease occurrence;7.28e-08;1.80e-07;5.67e-07;3.28e-06;0.00;1.26e-08
+Titan RTX;Epf - Eutrophication, freshwater;kg P eq;1.27e-06;0.000103;4.85e-05;0.000260;0.00;8.19e-08
+Titan RTX;Epm - Eutrophication marine;kg N eq;0.00234;0.00134;0.00981;0.0685;0.00;0.000688
+Titan RTX;Ept - Eutrophication, terrestrial;mol N eq;0.0255;0.0148;0.105;0.717;0.00;0.00755
+Titan RTX;CTUh-c - Human toxicity, cancer;CTUh;2.28e-09;1.44e-06;6.48e-09;1.14e-08;0.00;3.90e-12
+Titan RTX;CTUh-nc - Human toxicity, non-cancer;CTUh;8.55e-08;2.48e-07;3.50e-07;6.98e-07;0.00;4.83e-10
+Titan RTX;IR - Ionising radiation, human health;kBq U-235 eq;0.0467;25.3;3.82;1.22;0.00;0.000532
+Titan RTX;LU - Land use;Pt;0.112;0.209;0.0538;0.270;0.00;0.00
+Titan RTX;ODP - Ozone depletion;kg CFC11 eq;5.50e-09;2.57e-07;1.87e-06;3.44e-05;0.00;3.35e-10
+Titan RTX;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00944;0.00625;0.0377;0.229;0.00;0.00191
+Titan RTX;ADPf - Resource use, fossils;MJ;281.0;27.5;201.0;1270.0;0.00;3.05
+Titan RTX;ADPe - Resource use, minerals and metals;kg Sb eq;1.56e-07;0.000244;0.00383;0.00159;0.00;8.60e-09
+Titan RTX;WU - Water use;m3;1.43;1.10;5.00;30.5;0.00;0.000829
+GEFORCE GTX 1080 Ti;AP - Acidification;mol H+ eq;0.0190;0.106;0.0850;0.346;0.00;0.00159
+GEFORCE GTX 1080 Ti;GWP - Climate change;kg CO2 eq;2.15;1.73;10.2;58.8;0.00;0.239
+GEFORCE GTX 1080 Ti;CTUe - Ecotoxicity, freshwater;CTUe;159.0;116.0;158.0;718.0;0.00;0.161
+GEFORCE GTX 1080 Ti;PM - EF-particulate Matter;disease occurrence;1.20e-07;6.44e-07;4.51e-07;1.90e-06;0.00;1.38e-08
+GEFORCE GTX 1080 Ti;Epf - Eutrophication, freshwater;kg P eq;1.76e-05;0.000796;3.14e-05;0.000125;0.00;8.94e-08
+GEFORCE GTX 1080 Ti;Epm - Eutrophication marine;kg N eq;0.00196;0.00185;0.00762;0.0388;0.00;0.000751
+GEFORCE GTX 1080 Ti;Ept - Eutrophication, terrestrial;mol N eq;0.0217;0.0224;0.0813;0.407;0.00;0.00824
+GEFORCE GTX 1080 Ti;CTUh-c - Human toxicity, cancer;CTUh;1.30e-08;1.14e-05;4.28e-09;7.08e-09;0.00;4.26e-12
+GEFORCE GTX 1080 Ti;CTUh-nc - Human toxicity, non-cancer;CTUh;1.30e-06;1.45e-06;2.27e-07;4.44e-07;0.00;5.28e-10
+GEFORCE GTX 1080 Ti;IR - Ionising radiation, human health;kBq U-235 eq;2.28;173.0;23.5;0.811;0.00;0.000581
+GEFORCE GTX 1080 Ti;LU - Land use;Pt;0.0773;1.90;0.0323;0.103;0.00;0.00
+GEFORCE GTX 1080 Ti;ODP - Ozone depletion;kg CFC11 eq;5.16e-07;4.19e-07;1.49e-06;1.57e-05;0.00;3.65e-10
+GEFORCE GTX 1080 Ti;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00732;0.0126;0.0299;0.132;0.00;0.00209
+GEFORCE GTX 1080 Ti;ADPf - Resource use, fossils;MJ;40.6;22.6;164.0;692.0;0.00;3.33
+GEFORCE GTX 1080 Ti;ADPe - Resource use, minerals and metals;kg Sb eq;0.000151;0.000842;0.00277;0.00146;0.00;9.38e-09
+GEFORCE GTX 1080 Ti;WU - Water use;m3;1.36;5.25;3.61;16.7;0.00;0.000905
+Nvidia L4;AP - Acidification;mol H+ eq;0.00;0.0114;0.0296;0.318;0.00;0.000263
+Nvidia L4;GWP - Climate change;kg CO2 eq;0.00;0.590;3.65;53.2;0.00;0.0394
+Nvidia L4;CTUe - Ecotoxicity, freshwater;CTUe;0.00;11.2;55.5;644.0;0.00;0.0265
+Nvidia L4;PM - EF-particulate Matter;disease occurrence;0.00;6.74e-08;1.56e-07;1.75e-06;0.00;2.27e-09
+Nvidia L4;Epf - Eutrophication, freshwater;kg P eq;0.00;7.63e-05;1.16e-05;0.000102;0.00;1.48e-08
+Nvidia L4;Epm - Eutrophication marine;kg N eq;0.00;0.000460;0.00269;0.0350;0.00;0.000124
+Nvidia L4;Ept - Eutrophication, terrestrial;mol N eq;0.00;0.00474;0.0289;0.368;0.00;0.00136
+Nvidia L4;CTUh-c - Human toxicity, cancer;CTUh;0.00;1.07e-06;1.76e-09;6.70e-09;0.00;7.03e-13
+Nvidia L4;CTUh-nc - Human toxicity, non-cancer;CTUh;0.00;1.48e-07;1.01e-07;4.25e-07;0.00;8.71e-11
+Nvidia L4;IR - Ionising radiation, human health;kBq U-235 eq;0.00;16.2;0.572;0.794;0.00;9.58e-05
+Nvidia L4;LU - Land use;Pt;0.00;0.178;0.0137;0.0691;0.00;0.00
+Nvidia L4;ODP - Ozone depletion;kg CFC11 eq;0.00;3.93e-08;5.14e-07;1.24e-05;0.00;6.03e-11
+Nvidia L4;POCP - Photochemical ozone formation - human health;kg NMVOC eq;0.00;0.00214;0.0104;0.120;0.00;0.000345
+Nvidia L4;ADPf - Resource use, fossils;MJ;0.00;8.86;56.2;613.0;0.00;0.549
+Nvidia L4;ADPe - Resource use, minerals and metals;kg Sb eq;0.00;7.82e-05;0.000813;0.00159;0.00;1.55e-09
+Nvidia L4;WU - Water use;m3;0.00;0.557;1.44;13.3;0.00;0.000149
