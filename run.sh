@@ -1,26 +1,15 @@
 #!/usr/bin/env bash
 
 # --- CONFIGURATION ---
-IMAGE_NAME="mon-benchmark-cuda"
+IMAGE_NAME="Sim-LLM-Benchmark-cuda"
 CONTAINER_WORKDIR="/workspace"
 
 echo "Démarrage de la configuration de l'environnement..."
 chmod +x scripts/*.sh
 chmod +x measure/scripts/*.sh
-# 1. Gestion de l'agent SSH (pour le push/pull sans mot de passe)
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    echo "Démarrage de l'agent SSH..."
-    eval $(ssh-agent -s)
-fi
 
-# Vérifie si une clé est déjà chargée, sinon propose d'en ajouter une
-ssh-add -l > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo "🔓 Aucune clé SSH détectée. Veuillez ajouter votre clé (ex: ~/.ssh/id_rsa) :"
-    ssh-add
-fi
 
-# 2. Construction de l'image Docker
+# 1. Construction de l'image Docker
 echo "Construction de l'image Docker (cela peut prendre quelques minutes)..."
 docker build -t $IMAGE_NAME .
 
@@ -29,7 +18,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 3. Lancement du conteneur avec toutes les options
+# 2. Lancement du conteneur avec toutes les options
 echo "Lancement du conteneur avec accès aux GPUs et SSH..."
 mkdir -p /tmp/ollama_host_storage
 mkdir -p "$(pwd)/save_data"
@@ -37,8 +26,6 @@ docker run --device nvidia.com/gpu=all -it --rm \
   --shm-size=16gb \
   --net=host \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $SSH_AUTH_SOCK:/ssh-agent \
-  -e SSH_AUTH_SOCK=/ssh-agent \
   -v "$(pwd)":$CONTAINER_WORKDIR \
   -v /tmp/ollama_host_storage:/tmp/ollama \
   $IMAGE_NAME
