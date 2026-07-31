@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # --- CONFIGURATION ---
-IMAGE_NAME="Sim-LLM-Benchmark-cuda"
+IMAGE_NAME="sim-llm-benchmark-cuda"
 CONTAINER_WORKDIR="/workspace"
 
 echo "Démarrage de la configuration de l'environnement..."
