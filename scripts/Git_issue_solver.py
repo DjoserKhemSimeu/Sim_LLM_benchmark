@@ -97,16 +97,15 @@ print(f"[{job_id}] Fichier YAML configuré avec le modèle : {MODEL} sur {HOST}"
 if __name__ == "__main__":
     
     print(f"[{job_id}] Starting User {ID} Benchmark...")
-
+    filter_string = "|".join(ISSUES)
     # 1. Définir la commande sous forme de liste (recommandé pour subprocess)
     cmd = [
         "mini-extra", "swebench",
         "--subset", "lite",
         "--split", "test",
         "-m", f"openai/{MODEL}",  # Utilise dynamiquement le modèle configuré
-        "-i", f"{ISSUES}",
-        "-c", f"{swe_config_yaml}",
-        "-o", f"trajectory.json"
+        "--filter", filter_string,
+        "-c", f"{swe_config_yaml}"
     ]
     env = os.environ.copy()
     env["OPENAI_API_KEY"] = "sk-dummy-key-pour-ollama"
