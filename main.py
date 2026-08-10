@@ -142,7 +142,19 @@ def main():
             tuer_tous_processus_ollama()
         else:
             print("Aucun port Ollama détecté.")
-
+    SWE_EVAL_SCRIPT = "scripts/run_all_evals.sh"
+    print(f"\n--- Lancement de l'évaluation SWE-bench via {SWE_EVAL_SCRIPT} ---")
+    if os.path.exists(SWE_EVAL_SCRIPT):
+        try:
+            # On utilise subprocess.run avec 'bash' pour s'assurer qu'il s'exécute correctement
+            # et on attend qu'il termine avant de passer à perf_show
+            subprocess.run(["bash", SWE_EVAL_SCRIPT], check=True)
+            print("--- Évaluation SWE-bench terminée ---")
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur critique lors de l'exécution du script Bash SWE-bench : {e}")
+            sys.exit(1)
+    else:
+        print(f"Avertissement : Le fichier {SWE_EVAL_SCRIPT} n'a pas été trouvé. On passe à la suite.")
     # Exécution finale du script d'évaluation
     print(f"Lancement du script d'évaluation : {args.config}")
     if MTC:
