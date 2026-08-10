@@ -41,6 +41,7 @@ HOST = args.host
 ITER = args.iter
 NB_USER = args.n_users
 MODEL = os.environ.get("BENCH_MODEL", "gemma3:4b")
+ISSUES = json.loads(os.environ.get("BENCH_ISSUES", "[]"))
 
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
@@ -94,46 +95,47 @@ print(f"[{job_id}] Fichier YAML configuré avec le modèle : {MODEL} sur {HOST}"
 
 
 if __name__ == "__main__":
-    print(f"[{job_id}] Starting User {ID} Benchmark...")
+    for i,issue in enumerate(ISSUES):
+        print(f"[{job_id}] Starting User {ID} Benchmark. Soving the Issue: {issue} (n° {i+1})")
     
-    # 1. Définir la commande sous forme de liste (recommandé pour subprocess)
-    cmd = [
-        "mini-extra", "swebench-single",
-        "--subset", "lite",
-        "--split", "test",
-        "-m", f"openai/{MODEL}",  # Utilise dynamiquement le modèle configuré
-        "-i", "2",
-        "-c", f"{swe_config_yaml}",
-        "-o", "trajectory.json",
-        "--yolo"
-    ]
-    env = os.environ.copy()
-    env["OPENAI_API_KEY"] = "sk-dummy-key-pour-ollama"
-    env["OPENAI_API_BASE"] = f"{HOST}/v1"
-    env["OPENAI_BASE_URL"] = f"{HOST}/v1"
-    print(f"[{job_id}] Exécution de la commande : {' '.join(cmd)}")
-    print("-" * 40)
-    
-    try:
-        process = subprocess.run(
-            cmd,
-            check=True,
-            env=env
-        )
-        result = "Exécution terminée avec succès."
+        # 1. Définir la commande sous forme de liste (recommandé pour subprocess)
+        cmd = [
+            "mini-extra", "swebench-single",
+            "--subset", "lite",
+            "--split", "test",
+            "-m", f"openai/{MODEL}",  # Utilise dynamiquement le modèle configuré
+            "-i", f"{issue}",
+            "-c", f"{swe_config_yaml}",
+            "-o", f"trajectory_{issue}.json",
+            "--yolo"
+        ]
+        env = os.environ.copy()
+        env["OPENAI_API_KEY"] = "sk-dummy-key-pour-ollama"
+        env["OPENAI_API_BASE"] = f"{HOST}/v1"
+        env["OPENAI_BASE_URL"] = f"{HOST}/v1"
+        print(f"[{job_id}] Exécution de la commande : {' '.join(cmd)}")
+        print("-" * 40)
         
-    except subprocess.CalledProcessError as e:
-        print(f"\n[{job_id}] La commande a échoué avec le code erreur {e.returncode}")
-        result = "ERREUR : La commande a planté. Consultez les logs ci-dessus."
-    except FileNotFoundError:
-        result = f"[{job_id}] Erreur : La commande 'mini-extra' est introuvable."
-    except KeyboardInterrupt:
-        result = f"\n[{job_id}] Processus interrompu manuellement par l'utilisateur."
-    finally:
-        # Nettoyage exclusif des conteneurs associés à CE run spécifique
-        print(f"\n[{job_id}] Nettoyage des conteneurs SWE-bench orphelins...")
-        cleanup_cmd = f'docker rm -f $(docker ps -qa --filter "label=run_id={job_id}") 2>/dev/null'
-        os.system(cleanup_cmd)
-        
-    # 3. Afficher le résultat final
-    print(f"\n--- Final result User {ID} ---\n{result}")
+        try:
+            process = subprocess.run(
+                cmd,
+                check=True,
+                env=env
+            )
+            result = "Exécution terminée avec succès."
+            
+        except subprocess.CalledProcessError as e:
+            print(f"\n[{job_id}] La commande a échoué avec le code erreur {e.returncode}")
+            result = "ERREUR : La commande a planté. Consultez les logs ci-dessus."
+        except FileNotFoundError:
+            result = f"[{job_id}] Erreur : La commande 'mini-extra' est introuvable."
+        except KeyboardInterrupt:
+            result = f"\n[{job_id}] Processus interrompu manuellement par l'utilisateur."
+        finally:
+            # Nettoyage exclusif des conteneurs associés à CE run spécifique
+            print(f"\n[{job_id}] Nettoyage des conteneurs SWE-bench orphelins...")
+            cleanup_cmd = f'docker rm -f $(docker ps -qa --filter "label=run_id={job_id}") 2>/dev/null'
+            os.system(cleanup_cmd)
+            
+        # 3. Afficher le résultat final
+        print(f"\n--- Issue {issue} (n° {i+1}) result User {ID} ---\n{result}")
