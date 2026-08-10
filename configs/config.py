@@ -25,6 +25,7 @@ def set_env_from_gpu_config(config_path: str) -> None:
     print(f"Using manufacturing data set: {config['MANUFACTURE_DATA']}")
     os.environ["BENCH_PUE"] = str(config["PUE"])
     os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
+    os.environ["BENCH_ITERATION"] = str(config.get("Iteration", 10))
     os.environ["BENCH_MODELS"] = json.dumps(config["Models"])
     os.environ["BENCH_ISSUES"] = json.dumps(config["SWEbench_issues"])
 
