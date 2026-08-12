@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import os
 import pandas as pd
@@ -39,7 +40,21 @@ NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
 print_lock = threading.Lock()
 df_prompts = pd.read_csv("data/prompts.csv")
 
-
+def warmup_gpu(gpu_id, model):
+    print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
+    try:
+        url = f"http://localhost:{53100 + int(gpu_id)}/api/generate"
+        response = requests.post(url, json={
+            "model": model,
+            "prompt": "warmup: Are you ready to run (yes/no)?",
+            "stream": False
+        }, timeout=300) # Ajout d'un timeout (5 min) car le chargement VRAM peut être long
+        response.raise_for_status() # Vérifie que la requête a réussi (code 200)
+        print(f"Modèle chargé en VRAM sur le GPU {gpu_id} !")
+        return gpu_id, True
+    except Exception as e:
+        print(f"Erreur lors du préchauffage sur le GPU {gpu_id} : {e}")
+        return gpu_id, False
 
 def load_env_from_directory(env_dir):
     """Charge toutes les variables d'environnement depuis un fichier .env dans un dossier."""
@@ -138,17 +153,19 @@ async def benchmark(config_path, users_list):
 
     results = {}
     delta_t_data = {}
-    for gpu_id in range(NUM_GPUS):
-        print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
-        try:
-            requests.post(f"http://localhost:{53100 + int(gpu_id)}/api/generate", json={
-                "model": model,
-                "prompt": "warmup: Are you ready to run (yes/no)?",
-                "stream": False
-            })
-            print("Modèle chargé en VRAM !")
-        except Exception as e:
-            print(f"Erreur lors du préchauffage : {e}")
+    print("--- Début du préchauffage en parallèle ---")
+
+    # max_workers définit le nombre de threads simultanés (un par GPU)
+    with ThreadPoolExecutor(max_workers=NUM_GPUS) as executor:
+        # On soumet toutes les tâches à l'exécuteur
+        futures = [executor.submit(warmup_gpu, gpu_id, model) for gpu_id in range(NUM_GPUS)]
+        
+        # La boucle 'as_completed' attend et traite les réponses au fur et à mesure de leur arrivée
+        for future in as_completed(futures):
+            gpu_id, success = future.result()
+
+
+    print("--- Préchauffage de tous les GPU terminé ---")
 
     for n_users in users_list:
     
