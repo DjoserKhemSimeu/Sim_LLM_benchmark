@@ -21,8 +21,6 @@ def set_env_from_gpu_config(config_path: str) -> None:
         tegra = 1
     os.environ["BENCH_TEGRA"] = str(tegra)
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
-    os.environ["BENCH_MANUFACTURE_DATA"] = config["MANUFACTURE_DATA"]
-    print(f"Using manufacturing data set: {config['MANUFACTURE_DATA']}")
     os.environ["BENCH_PUE"] = str(config["PUE"])
     os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
     os.environ["BENCH_ITERATION"] = str(config.get("Iteration", 10))

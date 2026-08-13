@@ -38,7 +38,6 @@ N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
 print_lock = threading.Lock()
-df_prompts = pd.read_csv("data/prompts.csv")
 
 def warmup_gpu(gpu_id, model):
     print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")

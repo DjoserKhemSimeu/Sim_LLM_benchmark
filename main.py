@@ -7,14 +7,11 @@ import time
 import signal
 import re
 from configs.config import set_env_from_gpu_config
-from measure.scripts.bar_impact import main_impact
 import json
-from measure.scripts.bar_impact_mtc import main_impact_mtc
+from measure.scripts.gpu_impact_calculator import main_impact
 
 BENCH_SCRIPT = "scripts/multi_gpu_bench.py"
-MANUFACTURING_IMPACT_SCRIPT = "measure/scripts/bar_impact.py"
-EVALUATION_SCRIPT = "measure/scripts/perf_show.py"
-EVALUATION_SCRIPT_MTC = "measure/scripts/perf_show_mtc.py"
+EVALUATION_SCRIPT = "measure/scripts/evaluation.py"
 os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + os.pathsep + "."
 
 
@@ -81,6 +78,8 @@ def main():
         required=True,
         help="Chemin vers le fichier JSON de configuration des GPU.",
     )
+    parser.add_argument("--skip-bench", action="store_true", help="Passe l'inférence et va direct à l'évaluation")
+    parser.add_argument("--skip-eval", action="store_true", help="Passe l'évaluation")
     args = parser.parse_args()
     # Libérer les ports utilisés par Ollama avant la prochaine itération
     ports_ollama = detecter_ports_ollama()
@@ -89,15 +88,6 @@ def main():
         tuer_tous_processus_ollama()
     else:
         print("Aucun port Ollama détecté.")
-    MTC_VAL = ""
-    with open(args.config, "r") as f:
-        config = json.load(f)
-        MTC_VAL=config["MANUFACTURE_DATA"]
-    if MTC_VAL == "more-than-carbon":
-        MTC = True
-    else:
-        MTC = False
-    print(f"MTC mode: {MTC}")
     MODELS = []
     with open(args.config, "r") as f:
         config = json.load(f)
@@ -106,10 +96,7 @@ def main():
         print(f"Running the Sim LLM benchmark with the model: {model}")
         os.environ["BENCH_MODEL"] = model
         set_env_from_gpu_config(args.config)
-        if MTC:
-            main_impact_mtc()
-        else:
-            main_impact()
+        main_impact()
         # Afficher toutes les variables d'environnement
         for key, value in os.environ.items():
             if key.startswith("BENCH_GPU_"):
@@ -157,13 +144,10 @@ def main():
         print(f"Avertissement : Le fichier {SWE_EVAL_SCRIPT} n'a pas été trouvé. On passe à la suite.")
     # Exécution finale du script d'évaluation
     print(f"Lancement du script d'évaluation : {args.config}")
-    if MTC:
-        evaluation_script = EVALUATION_SCRIPT_MTC
-    else:
-        evaluation_script = EVALUATION_SCRIPT
+    
     
     process = subprocess.Popen(
-        [sys.executable, evaluation_script],
+        [sys.executable, EVALUATION_SCRIPT],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

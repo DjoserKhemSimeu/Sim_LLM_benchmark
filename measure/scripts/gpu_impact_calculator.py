@@ -241,8 +241,8 @@ def compute_alpha(gpu_target, f_heatsink_target, f_chip_target, base_specs, base
     f_impacts = np.dot(impacts, pond_normalized)
     return f_impacts
 
-def main_impact_mtc():
-    print("\n--- [START] main_impact_mtc ---")
+def main_impact():
+    print("\n--- [START] main_impact ---")
     base_impacts, all_categories = load_base_gpus_impacts()
     if not base_impacts:
         print("[ABORT] Impossible de charger les impacts de base.")
@@ -290,7 +290,7 @@ def main_impact_mtc():
     df_summary = pd.DataFrame(summary_data)
     csv_cols = ["Hardware", "FU"] + [c.split(" - ")[0] for c in TARGET_CATEGORIES]
     df_summary[csv_cols].to_csv("data/manufacturing_impact_summary_mtc.csv", index=False)
-    print("\n--- [END] main_impact_mtc. Calculs réussis ! ---")
+    print("\n--- [END] main_impact. Calculs réussis ! ---")
 
 if __name__ == "__main__":
-    main_impact_mtc()
+    main_impact()

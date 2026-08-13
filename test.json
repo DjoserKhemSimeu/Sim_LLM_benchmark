@@ -3,23 +3,14 @@
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
   "SWEbench_issues": [
-    "astropy__astropy-7746",
-    "django__django-11099",
     "matplotlib__matplotlib-23314",
-    "mwaskom__seaborn-3407",
-    "pallets__flask-4045",
-    "psf__requests-1963",
-    "pydata__xarray-4248",
-    "pylint-dev__pylint-6506",
     "pytest-dev__pytest-5227",
     "scikit-learn__scikit-learn-10508",
-    "sphinx-doc__sphinx-7738",
     "sympy__sympy-13177"
   ],
-  "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
-  "Iteration":1,
-  "Models":["mistral"],
+  "Nb_users":[10,25,50,100],
+  "Iteration":10,
+  "Models":["qwen3.6:35b"],
   "gpus": {
     "0": {
       "nom": "RTX 3080",
