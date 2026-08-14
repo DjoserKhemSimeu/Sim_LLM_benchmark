@@ -81,33 +81,96 @@ def main():
     parser.add_argument("--skip-bench", action="store_true", help="Passe l'inférence et va direct à l'évaluation")
     parser.add_argument("--skip-eval", action="store_true", help="Passe l'évaluation")
     args = parser.parse_args()
-    # Libérer les ports utilisés par Ollama avant la prochaine itération
-    ports_ollama = detecter_ports_ollama()
-    if ports_ollama:
-        print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
-        tuer_tous_processus_ollama()
+
+
+    # ==========================================
+    # PHASE 1 : BENCHMARK (Inférence)
+    # ==========================================
+    if not args.skip_bench:
+        # Libérer les ports utilisés par Ollama avant la prochaine itération
+        ports_ollama = detecter_ports_ollama()
+        if ports_ollama:
+            print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
+            tuer_tous_processus_ollama()
+        else:
+            print("Aucun port Ollama détecté.")
+            
+        MODELS = []
+        with open(args.config, "r") as f:
+            config = json.load(f)
+            MODELS = config["Models"]
+            
+        for model in MODELS:
+            print(f"Running the Sim LLM benchmark with the model: {model}")
+            os.environ["BENCH_MODEL"] = model
+            # ==========================================
+            # PHASE 1.1 : GPU impact calculation
+            # ==========================================
+            set_env_from_gpu_config(args.config)
+            main_impact()
+            
+            # Afficher toutes les variables d'environnement
+            for key, value in os.environ.items():
+                if key.startswith("BENCH_GPU_"):
+                    print(f"{key}: {value}")
+            
+                    
+            # Exécution du benchmark
+            if not os.path.exists(BENCH_SCRIPT):
+                print(f"Erreur : Le fichier {BENCH_SCRIPT} n'existe pas.")
+                sys.exit(1)
+                
+            print(f"Lancement du benchmark avec la configuration : {args.config}")
+            process = subprocess.Popen(
+                [sys.executable, BENCH_SCRIPT],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+            for line in process.stdout:
+                print(line, end="")
+            return_code = process.wait()
+            
+            if return_code != 0:
+                print("\n--- ERREUR D'EXÉCUTION (benchmark) ---")
+                stderr_output = process.stderr.read()
+                print("Backtrace :\n" + stderr_output)
+                sys.exit(1)
+
+            # Libérer les ports utilisés par Ollama avant la prochaine itération
+            ports_ollama = detecter_ports_ollama()
+            if ports_ollama:
+                print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
+                tuer_tous_processus_ollama()
+            else:
+                print("Aucun port Ollama détecté.")
     else:
-        print("Aucun port Ollama détecté.")
-    MODELS = []
-    with open(args.config, "r") as f:
-        config = json.load(f)
-        MODELS=config["Models"]
-    for model in MODELS:
-        print(f"Running the Sim LLM benchmark with the model: {model}")
-        os.environ["BENCH_MODEL"] = model
-        set_env_from_gpu_config(args.config)
-        main_impact()
-        # Afficher toutes les variables d'environnement
-        for key, value in os.environ.items():
-            if key.startswith("BENCH_GPU_"):
-                print(f"{key}: {value}")
-                # Exécution du benchmark
-        if not os.path.exists(BENCH_SCRIPT):
-            print(f"Erreur : Le fichier {BENCH_SCRIPT} n'existe pas.")
-            sys.exit(1)
-        print(f"Lancement du benchmark avec la configuration : {args.config}")
+        print("--- Mode Skip : Inférence ignorée ---")
+
+
+    # ==========================================
+    # PHASE 2 : ÉVALUATION (SWE-Bench & Perf)
+    # ==========================================
+    if not args.skip_eval:
+        SWE_EVAL_SCRIPT = "scripts/run_all_evals.sh"
+        print(f"\n--- Lancement de l'évaluation SWE-bench via {SWE_EVAL_SCRIPT} ---")
+        if os.path.exists(SWE_EVAL_SCRIPT):
+            try:
+                # On utilise subprocess.run avec 'bash' pour s'assurer qu'il s'exécute correctement
+                # et on attend qu'il termine avant de passer à perf_show
+                subprocess.run(["bash", SWE_EVAL_SCRIPT], check=True)
+                print("--- Évaluation SWE-bench terminée ---")
+            except subprocess.CalledProcessError as e:
+                print(f"Erreur critique lors de l'exécution du script Bash SWE-bench : {e}")
+                sys.exit(1)
+        else:
+            print(f"Avertissement : Le fichier {SWE_EVAL_SCRIPT} n'a pas été trouvé. On passe à la suite.")
+            
+        # Exécution finale du script d'évaluation
+        print(f"Lancement du script d'évaluation : {args.config}")
         process = subprocess.Popen(
-            [sys.executable, BENCH_SCRIPT],
+            [sys.executable, EVALUATION_SCRIPT],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -116,51 +179,14 @@ def main():
         for line in process.stdout:
             print(line, end="")
         return_code = process.wait()
+        
         if return_code != 0:
-            print("\n--- ERREUR D'EXÉCUTION (benchmark) ---")
+            print("\n--- ERREUR D'EXÉCUTION (évaluation) ---")
             stderr_output = process.stderr.read()
             print("Backtrace :\n" + stderr_output)
             sys.exit(1)
-
-        # Libérer les ports utilisés par Ollama avant la prochaine itération
-        ports_ollama = detecter_ports_ollama()
-        if ports_ollama:
-            print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
-            tuer_tous_processus_ollama()
-        else:
-            print("Aucun port Ollama détecté.")
-    SWE_EVAL_SCRIPT = "scripts/run_all_evals.sh"
-    print(f"\n--- Lancement de l'évaluation SWE-bench via {SWE_EVAL_SCRIPT} ---")
-    if os.path.exists(SWE_EVAL_SCRIPT):
-        try:
-            # On utilise subprocess.run avec 'bash' pour s'assurer qu'il s'exécute correctement
-            # et on attend qu'il termine avant de passer à perf_show
-            subprocess.run(["bash", SWE_EVAL_SCRIPT], check=True)
-            print("--- Évaluation SWE-bench terminée ---")
-        except subprocess.CalledProcessError as e:
-            print(f"Erreur critique lors de l'exécution du script Bash SWE-bench : {e}")
-            sys.exit(1)
     else:
-        print(f"Avertissement : Le fichier {SWE_EVAL_SCRIPT} n'a pas été trouvé. On passe à la suite.")
-    # Exécution finale du script d'évaluation
-    print(f"Lancement du script d'évaluation : {args.config}")
-    
-    
-    process = subprocess.Popen(
-        [sys.executable, EVALUATION_SCRIPT],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-    )
-    for line in process.stdout:
-        print(line, end="")
-    return_code = process.wait()
-    if return_code != 0:
-        print("\n--- ERREUR D'EXÉCUTION (évaluation) ---")
-        stderr_output = process.stderr.read()
-        print("Backtrace :\n" + stderr_output)
-        sys.exit(1)
+        print("--- Mode Skip : Évaluation ignorée ---")
 
 
 if __name__ == "__main__":
