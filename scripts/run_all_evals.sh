@@ -15,25 +15,32 @@ for AGENT_DIR in "$BASE_DIR"/agent_env_user_*; do
         
         if [ -f "$AGENT_DIR/preds.json" ]; then
             
-            # On récupère le nom du dossier d'origine
-            DIR_NAME=$(basename "$AGENT_DIR")
+            # On compte les fichiers .json qui ne s'appellent pas "preds.json"
+            EVAL_FILES_COUNT=$(find "$AGENT_DIR" -maxdepth 1 -type f -name "*.json" ! -name "preds.json" 2>/dev/null | wc -l)
             
-            # NOUVEAU : On remplace les ':' par des '_' pour que Docker accepte le nom
-            SAFE_RUN_ID=$(echo "$DIR_NAME" | tr ':' '_')
-            
-            # 1. On lance SWE-bench avec le SAFE_RUN_ID
-            python -m swebench.harness.run_evaluation \
-                --dataset_name princeton-nlp/SWE-bench_Lite \
-                --split test \
-                --predictions_path "$AGENT_DIR/preds.json" \
-                --run_id "$SAFE_RUN_ID" \
-                --max_workers 4
+            if [ "$EVAL_FILES_COUNT" -gt 0 ]; then
+                echo "Ignoré : Un rapport d'évaluation existe déjà dans ce dossier."
+            else
+                # On récupère le nom du dossier d'origine
+                DIR_NAME=$(basename "$AGENT_DIR")
                 
-            # 2. On déplace le rapport généré (qui porte désormais le nom sécurisé)
-            echo "Déplacement du rapport vers $AGENT_DIR/"
-            mv *"$SAFE_RUN_ID".json "$AGENT_DIR/" 2>/dev/null
-            
-            echo "Évaluation terminée pour $DIR_NAME"
+                # On remplace les ':' par des '_' pour que Docker accepte le nom
+                SAFE_RUN_ID=$(echo "$DIR_NAME" | tr ':' '_')
+                
+                # 1. On lance SWE-bench avec le SAFE_RUN_ID
+                python -m swebench.harness.run_evaluation \
+                    --dataset_name princeton-nlp/SWE-bench_Lite \
+                    --split test \
+                    --predictions_path "$AGENT_DIR/preds.json" \
+                    --run_id "$SAFE_RUN_ID" \
+                    --max_workers 4
+                    
+                # 2. On déplace le rapport généré (qui porte désormais le nom sécurisé)
+                echo "Déplacement du rapport vers $AGENT_DIR/"
+                mv *"$SAFE_RUN_ID".json "$AGENT_DIR/" 2>/dev/null
+                
+                echo "Évaluation terminée pour $DIR_NAME"
+            fi
             
         else
             echo "Ignoré : Aucun fichier preds.json trouvé dans $AGENT_DIR"
@@ -42,4 +49,4 @@ for AGENT_DIR in "$BASE_DIR"/agent_env_user_*; do
 done
 
 echo "======================================================"
-echo "Toutes les évaluations sont terminées et rangées !"
+echo "Toutes les évaluations sont terminées."
