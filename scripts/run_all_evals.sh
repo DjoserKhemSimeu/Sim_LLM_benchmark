@@ -33,7 +33,7 @@ for AGENT_DIR in "$BASE_DIR"/agent_env_user_*; do
                     --split test \
                     --predictions_path "$AGENT_DIR/preds.json" \
                     --run_id "$SAFE_RUN_ID" \
-                    --max_workers 4
+                    --max_workers 16
                     
                 # 2. On déplace le rapport généré (qui porte désormais le nom sécurisé)
                 echo "Déplacement du rapport vers $AGENT_DIR/"

@@ -29,6 +29,7 @@ LAUNCH_ISSUE_SOLVER = True
 ISSUE_SOLVER_PATH = os.path.join('scripts', 'Git_issue_solver.py')
 WAIT_FOR_SOLVERS = False
 SYNC_ISSUE_SOLVER = True
+
 import functools
 # --- CONFIGURABLES ---
 T = 2  # Durée du benchmark (en secondes)
@@ -37,6 +38,7 @@ Max = 1  # Nb max de requêtes par utilisateur
 N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
+CHECKPOINT_FILE = f"measure/data/checkpoint_{MODEL}.json"
 print_lock = threading.Lock()
 def save_intermediate_raw_latencies(current_results):
     """Sauvegarde les latences brutes accumulées jusqu'à présent dans le CSV."""
@@ -61,6 +63,48 @@ def save_intermediate_raw_latencies(current_results):
     raw_csv_path = f"./measure/data/raw_latencies_{MODEL}.csv"
     df_raw.to_csv(raw_csv_path, index=False)
     log_message(f"[Sauvegarde intermédiaire] Données brutes mises à jour dans {raw_csv_path}")
+
+
+
+
+def load_checkpoint():
+    """Charge le dernier état d'avancement et restaure les dictionnaires de résultats."""
+    if os.path.exists(CHECKPOINT_FILE):
+        try:
+            with open(CHECKPOINT_FILE, "r") as f:
+                data = json.load(f)
+                
+            # Les clés JSON sont des strings, on les reconvertit en entiers
+            restored_results = {}
+            for u_str, iters in data.get("results", {}).items():
+                u_int = int(u_str)
+                restored_results[u_int] = {}
+                for it_str, times in iters.items():
+                    restored_results[u_int][int(it_str)] = times
+                    
+            restored_delta_t = {}
+            for u_str, iters in data.get("delta_t", {}).items():
+                u_int = int(u_str)
+                restored_delta_t[u_int] = {}
+                for it_str, dt in iters.items():
+                    restored_delta_t[u_int][int(it_str)] = dt
+
+            return data.get("last_nb_users", -1), data.get("last_iteration", -1), restored_results, restored_delta_t
+        except Exception as e:
+            log_message(f"Erreur lors du chargement du checkpoint: {e}. Démarrage à zéro.")
+    return -1, -1, {}, {}
+
+def save_checkpoint(nb_users, iteration, results, delta_t_data):
+    """Sauvegarde l'état d'avancement exact."""
+    os.makedirs("measure/data", exist_ok=True)
+    with open(CHECKPOINT_FILE, "w") as f:
+        json.dump({
+            "last_nb_users": nb_users,
+            "last_iteration": iteration,
+            "results": results,
+            "delta_t": delta_t_data
+        }, f)
+    log_message(f"[Checkpoint] Sauvegarde réussie : Modèle={MODEL}, Users={nb_users}, Iteration={iteration}")
 def warmup_gpu(gpu_id, model):
     print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
     try:
@@ -172,27 +216,31 @@ async def benchmark(config_path, users_list):
 
     log_message(f"Configuration chargée : {len(hosts)} hôtes, modèle = {model}")
 
-    results = {}
-    delta_t_data = {}
-    print("--- Début du préchauffage en parallèle ---")
+    # Chargement du checkpoint pour reprendre là où on s'est arrêté
+    last_u, last_i, results, delta_t_data = load_checkpoint()
 
-    # max_workers définit le nombre de threads simultanés (un par GPU)
+    print("--- Début du préchauffage en parallèle ---")
     with ThreadPoolExecutor(max_workers=NUM_GPUS) as executor:
-        # On soumet toutes les tâches à l'exécuteur
         futures = [executor.submit(warmup_gpu, gpu_id, model) for gpu_id in range(NUM_GPUS)]
-        
-        # La boucle 'as_completed' attend et traite les réponses au fur et à mesure de leur arrivée
         for future in as_completed(futures):
             gpu_id, success = future.result()
-
-
     print("--- Préchauffage de tous les GPU terminé ---")
 
     for n_users in users_list:
-    
-        save_times = {}
-        save_delta_t = {}
+        # Si on a déjà entièrement terminé ce palier d'utilisateurs, on le passe
+        if n_users < last_u:
+            log_message(f"=== Palier {n_users} utilisateurs déjà complété. Passage au suivant. ===")
+            continue
+
+        # On restaure les données de l'itération en cours si elle a crashé au milieu
+        save_times = results.get(n_users, {})
+        save_delta_t = delta_t_data.get(n_users, {})
+
         for i in range(N):
+            # Si on est sur le palier qui a planté, on passe les itérations déjà faites
+            if n_users == last_u and i <= last_i:
+                log_message(f"Skipping {n_users} utilisateurs, itération {i} (déjà réalisée).")
+                continue
 
             log_message(f"\n=== Benchmark avec {n_users} utilisateurs for iteration {i} ===")
             run_back_bash_script("measure/scripts/script_start_tx.sh", str(n_users), MODEL, str(i))
@@ -200,29 +248,29 @@ async def benchmark(config_path, users_list):
             tasks = []
             delta_t_collector = {}
             for u in range(n_users):
-                tasks.append(simulate_user(u, model, hosts, delta_t_collector,n_users,i))
+                tasks.append(simulate_user(u, model, hosts, delta_t_collector, n_users, i))
 
             all_times_nested = await asyncio.gather(*tasks)
             all_times = [t for sublist in all_times_nested for t in sublist]
 
             run_front_bash_script("measure/scripts/script_stop_tx.sh")
+            
+            # Enregistrement local de l'itération
             save_times[i] = all_times
-            save_delta_t[i] = [
-                dt for user in delta_t_collector for dt in delta_t_collector[user]
-            ]
+            save_delta_t[i] = [dt for user in delta_t_collector for dt in delta_t_collector[user]]
 
-        results[n_users] = save_times
-        delta_t_data[n_users] = save_delta_t
+            # Mise à jour globale
+            results[n_users] = save_times
+            delta_t_data[n_users] = save_delta_t
+
+            # --- CHECKPOINTING ET SAUVEGARDE A CHAQUE ITERATION ---
+            save_checkpoint(n_users, i, results, delta_t_data)
+            save_intermediate_raw_latencies(results)
 
         log_message(f"Completed {n_users} users, total requests: {len(all_times)}")
-
-        save_intermediate_raw_latencies(results)
-
         await asyncio.sleep(5)
 
-
     return results, delta_t_data
-
 
 # --- VISUALISATION ---
 def plot_latency_and_efficiency(results):
