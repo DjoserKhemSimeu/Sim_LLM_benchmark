@@ -38,7 +38,29 @@ N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
 print_lock = threading.Lock()
+def save_intermediate_raw_latencies(current_results):
+    """Sauvegarde les latences brutes accumulées jusqu'à présent dans le CSV."""
+    raw_data = []
+    for u, item in current_results.items():
+        all_times = []
+        # Aplatir les données (format dict d'itérations ou liste simple)
+        if isinstance(item, dict):
+            for v in item.values():
+                if isinstance(v, list):
+                    all_times.extend(v)
+                elif isinstance(v, (int, float)):
+                    all_times.append(v)
+        elif isinstance(item, list):
+            all_times = item
 
+        for lat in all_times:
+            raw_data.append({"nb_users": u, "latency": lat})
+
+    df_raw = pd.DataFrame(raw_data)
+    os.makedirs("./measure/data", exist_ok=True)
+    raw_csv_path = f"./measure/data/raw_latencies_{MODEL}.csv"
+    df_raw.to_csv(raw_csv_path, index=False)
+    log_message(f"[Sauvegarde intermédiaire] Données brutes mises à jour dans {raw_csv_path}")
 def warmup_gpu(gpu_id, model):
     print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
     try:
@@ -193,7 +215,11 @@ async def benchmark(config_path, users_list):
         delta_t_data[n_users] = save_delta_t
 
         log_message(f"Completed {n_users} users, total requests: {len(all_times)}")
+
+        save_intermediate_raw_latencies(results)
+
         await asyncio.sleep(5)
+
 
     return results, delta_t_data
 
