@@ -21,7 +21,7 @@ from utils.utils_file import log_message, run_back_bash_script, run_front_bash_s
 import threading
 import importlib
 import json
-
+os.environ["DOCKER_API_VERSION"] = "1.41"
 # Globals to track issue solver subprocesses and handles
 ISSUE_SOLVER_PROCS = []
 ISSUE_SOLVER_HANDLES = []
