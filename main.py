@@ -94,32 +94,39 @@ def main():
             tuer_tous_processus_ollama()
         else:
             print("Aucun port Ollama détecté.")
-            
+
         MODELS = []
         with open(args.config, "r") as f:
             config = json.load(f)
             MODELS = config["Models"]
-            
+
         for model in MODELS:
             print(f"Running the Sim LLM benchmark with the model: {model}")
+
+
             os.environ["BENCH_MODEL"] = model
+            set_env_from_gpu_config(args.config)
+
+            # 2. Une fois compilé, on met à jour la variable pour la suite du benchmark
+            custom_model = f"{model.replace(':', '-')}-swe"
+            os.environ["BENCH_MODEL"] = custom_model
+
             # ==========================================
             # PHASE 1.1 : GPU impact calculation
             # ==========================================
-            set_env_from_gpu_config(args.config)
             main_impact()
-            
+
             # Afficher toutes les variables d'environnement
             for key, value in os.environ.items():
                 if key.startswith("BENCH_GPU_"):
                     print(f"{key}: {value}")
-            
-                    
+
+
             # Exécution du benchmark
             if not os.path.exists(BENCH_SCRIPT):
                 print(f"Erreur : Le fichier {BENCH_SCRIPT} n'existe pas.")
                 sys.exit(1)
-                
+
             print(f"Lancement du benchmark avec la configuration : {args.config}")
             process = subprocess.Popen(
                 [sys.executable, BENCH_SCRIPT],
@@ -131,7 +138,7 @@ def main():
             for line in process.stdout:
                 print(line, end="")
             return_code = process.wait()
-            
+
             if return_code != 0:
                 print("\n--- ERREUR D'EXÉCUTION (benchmark) ---")
                 stderr_output = process.stderr.read()
@@ -166,7 +173,7 @@ def main():
                 sys.exit(1)
         else:
             print(f"Avertissement : Le fichier {SWE_EVAL_SCRIPT} n'a pas été trouvé. On passe à la suite.")
-            
+
         # Exécution finale du script d'évaluation
         print(f"Lancement du script d'évaluation : {args.config}")
         process = subprocess.Popen(
@@ -179,7 +186,7 @@ def main():
         for line in process.stdout:
             print(line, end="")
         return_code = process.wait()
-        
+
         if return_code != 0:
             print("\n--- ERREUR D'EXÉCUTION (évaluation) ---")
             stderr_output = process.stderr.read()

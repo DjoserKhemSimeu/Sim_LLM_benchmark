@@ -6,6 +6,7 @@ import os
 from utils.utils_file import run_front_bash_script
 from typing import Dict, Any
 import tomli_w
+import subprocess
 import shutil
 
 
@@ -27,13 +28,30 @@ def set_env_from_gpu_config(config_path: str) -> None:
     os.environ["BENCH_MODELS"] = json.dumps(config["Models"])
     os.environ["BENCH_ISSUES"] = json.dumps(config["SWEbench_issues"])
 
-    model = os.environ.get("BENCH_MODEL", "mistral:7b")
+    base_model = os.environ.get("BENCH_MODEL", "mistral:7b")
+
+    # ==========================================
+    # 1. CRÉATION AUTOMATIQUE DU MODELFILE
+    # ==========================================
+    custom_model = f"{base_model.replace(':', '-')}-swe"
+
+    print(f"Création du Modelfile pour {custom_model} (basé sur {base_model})...")
+    modelfile_content = f"""FROM {base_model}
+PARAMETER num_gpu 99
+PARAMETER num_thread 4
+PARAMETER num_ctx 32768
+"""
+    with open("Modelfile", "w", encoding="utf-8") as f:
+        f.write(modelfile_content)
+    # ==========================================
+
     toml_config = {
-        "model": model,
+        "model": custom_model,
         "temperature": 0.0,
         "system_message": "You are an assistant",
         "ollama_instances": {},
     }
+
     # Pour chaque GPU, définir les variables d'environnement
     for gpu_id, gpu_info in config["gpus"].items():
         prefix = f"BENCH_GPU_{gpu_id}"
@@ -51,27 +69,33 @@ def set_env_from_gpu_config(config_path: str) -> None:
         toml_config["ollama_instances"][f"localhost:{53100 + int(gpu_id)}"] = int(
             gpu_id
         )
-    
+
     with open("configs/config.toml", "wb") as f:
         tomli_w.dump(toml_config, f)
 
     run_front_bash_script(
-        "scripts/ollama-batch-servers.sh", os.environ["BENCH_NUM_GPU"], model
+        "scripts/ollama-batch-servers.sh", os.environ["BENCH_NUM_GPU"], base_model
     )
 
     print(f"Variables d'environnement définies pour {num_gpus} GPU(s).")
-    # for gpu_id, gpu_info in config["gpus"].items():
-    #     print("Préchauffage du modèle Ollama...")
-    # try:
-    #     requests.post(f"http://localhost:{53100 + int(gpu_id)}/api/generate", json={
-    #         "model": model,
-    #         "prompt": "warmup: Are you ready to run (yes/no)?",
-    #         "stream": False
-    #     })
-    #     print("Modèle chargé en VRAM !")
-    # except Exception as e:
-    #     print(f"Erreur lors du préchauffage : {e}")
 
+    # ==========================================
+    # 2. COMPILATION DU MODÈLE DANS OLLAMA
+    # ==========================================
+    print(f"Compilation en cours du modèle {custom_model} dans Ollama...")
+    try:
+        env_create = os.environ.copy()
+        # On cible la première instance qu'on vient juste de démarrer via le bash
+        env_create["OLLAMA_HOST"] = "localhost:53100"
+
+        # subprocess exécute la commande 'ollama create' de manière synchrone
+        subprocess.run(["ollama", "create", custom_model, "-f", "Modelfile"], env=env_create, check=True)
+        print(f"Modèle {custom_model} créé avec succès et prêt pour l'inférence !")
+    except subprocess.CalledProcessError as e:
+        print(f"Erreur lors de la compilation du modèle : {e}")
+    except FileNotFoundError:
+        print("L'exécutable 'ollama' n'a pas été trouvé.")
+    # ==========================================
 
 def main():
     parser = argparse.ArgumentParser(
