@@ -2,25 +2,27 @@
   "infra_name": "Mon_Infra_Calcul",
   "description": "Infrastructure de calcul avec plusieurs GPU pour différents usages",
   "PUE": 1.5,
-  "GitHub_SSH": "git@github.com:DjoserKhemSimeu/dummy_matrix_agent.git",
-  "Owner":"DjoserKhemSimeu",
-  "Repo_Name":"dummy_matrix_agent",
-  "MANUFACTURE_DATA": "more-than-carbon",
-  "Nb_users":[1],
-  "Iteration":1,
-  "Models":["gemma3:12b"],
+  "SWEbench_issues": [
+    "matplotlib__matplotlib-23314",
+    "pytest-dev__pytest-5227",
+    "scikit-learn__scikit-learn-10508",
+    "sympy__sympy-13177"
+  ],
+  "Nb_users":[10,25,50,100],
+  "Iteration":10,
+  "Models":["qwen3.6:35b"],
   "gpus": {
     "0": {
-      "nom": "NVIDIA GH200",
-      "die_area": 814,
-      "tdp": 900,
-      "density": 98300000,
-      "tech_node": "5",
+      "nom": "RTX 3080",
+      "die_area": 628,
+      "tdp": 55,
+      "density": 45100000,
+      "tech_node": "8",
       "type_memoire": "HBM2e",
-      "taille_memoire": 480,
+      "taille_memoire": 16,
       "foundry": "TSMC",
-      "date_sortie": "2024",
-      "fu": "Large scale"
+      "date_sortie": "2022",
+      "fu": "Gamming"
     }
   }
 }

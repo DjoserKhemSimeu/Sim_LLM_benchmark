@@ -4,3 +4,7 @@ agent_env/
 measure/data/
 images
 images/
+bin/
+__pycache__/
+*.py[cod]
+*$py.class

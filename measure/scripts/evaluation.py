@@ -68,13 +68,12 @@ def load_electricity_impacts(path="data/Electricity_impacts.csv", factors=["GWP"
     return {f: mapping.get(f, 0.0) for f in factors}
 
 
-def load_sucess_rates_old():
-    # If a precomputed grouped results CSV exists, use it to avoid rescanning files
-    cached_group = Path("measure/data/pytest_grouped_results.csv")
+def load_sucess_rates():
+    # J'ai renommé le cache pour repartir sur des bases saines avec SWE-bench
+    cached_group = Path("measure/data/swebench_grouped_results.csv")
     if cached_group.exists():
         try:
             df_grouped = pd.read_csv(cached_group)
-            # ensure nb_users is integer when possible
             if "nb_users" in df_grouped.columns:
                 try:
                     df_grouped["nb_users"] = df_grouped["nb_users"].astype(int)
@@ -87,8 +86,11 @@ def load_sucess_rates_old():
 
     BASE_DIR = "agent_env"
     folder_pattern = re.compile(r"agent_env_user_(.+)_(\d+)_(\d+)_(\d+)")
-
     rows = []
+
+    if not os.path.exists(BASE_DIR):
+        print(f"Directory {BASE_DIR} not found.")
+        return pd.DataFrame()
 
     for folder in os.listdir(BASE_DIR):
         folder_path = os.path.join(BASE_DIR, folder)
@@ -105,27 +107,28 @@ def load_sucess_rates_old():
         agent_id = int(agent_id)
         run_id = int(run_id)
 
-        # Chemin vers app.py
-        app_file = os.path.join(folder_path, REPO, "app.py")
+        # On cherche le rapport d'évaluation SWE-bench dans le dossier de l'agent
+        # Il peut s'appeler par exemple 'openai__qwen3.6:27b.qwen_eval_run.json' ou 'report.json'
+        all_jsons = glob.glob(os.path.join(folder_path, "*.json"))
+        eval_files = [f for f in all_jsons if not f.endswith("preds.json")]
 
-        # Cas 1 : app.py existe → tester la fonction addition()
-        if os.path.isfile(app_file):
+        percent = 0
+        if eval_files:
+            eval_file = eval_files[0]
             try:
-                # Charger dynamiquement le module
-                spec = importlib.util.spec_from_file_location("app_module", app_file)
-                app_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(app_module)
-
-                # Tester la fonction addition()
-                result = app_module.addition(2, 3)  # Test avec 2 + 3 = 5
-                if result == 5:
-                    percent = 100  # Succès
-                else:
-                    percent = 0     # Échec
+                with open(eval_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                
+                resolved = data.get("resolved_instances", 0)
+                # On utilise submitted_instances, et on évite la division par zéro
+                submitted = data.get("submitted_instances", 1) 
+                
+                if submitted > 0:
+                    percent = (resolved / submitted) * 100
             except Exception as e:
-                print(f"Erreur lors de l'exécution de {app_file}: {e}")
-                percent = 0
+                print(f"Erreur lors de la lecture du fichier SWE-bench {eval_file}: {e}")
         else:
+            # Aucun fichier SWE-bench trouvé = échec
             percent = 0
 
         rows.append({
@@ -136,116 +139,31 @@ def load_sucess_rates_old():
             "percent": percent
         })
 
-    # DataFrame complet
+    # Création du DataFrame complet
     df = pd.DataFrame(rows)
 
-    # Regroupement par modèle et nb_users
+    if df.empty:
+        print("Aucune donnée d'agent trouvée pour calculer le taux de succès.")
+        return pd.DataFrame()
+
+    # REGROUPEMENT PAR MODEL ET NB_USERS
+    # Note : J'ai rajouté "nb_users" dans le groupby pour que les annotations de tes 
+    # graphiques (plot_combined_global_impact et plot_latency_boxplots) fonctionnent correctement.
     df_grouped = (
         df.groupby(["model", "nb_users"])["percent"]
         .mean()
         .reset_index()
         .rename(columns={"percent": "mean_success_percent"})
     )
-
-    print("\n=== Pourcentage moyen de réussite par modèle & nb_users ===")
-    print(df_grouped)
-    df_grouped.to_csv("measure/data/pytest_grouped_results.csv", index=False)
-    df.to_csv("measure/data/pytest_raw_results.csv", index=False)
-
-    return df_grouped
-
-
-def load_sucess_rates():
-
-    cached_group = Path("measure/data/pytest_grouped_results.csv")
-    if cached_group.exists():
-        try:
-            df_grouped = pd.read_csv(cached_group)
-            # ensure nb_users is integer when possible
-            if "nb_users" in df_grouped.columns:
-                try:
-                    df_grouped["nb_users"] = df_grouped["nb_users"].astype(int)
-                except Exception:
-                    pass
-            print(f"Using cached grouped results from {cached_group}")
-            return df_grouped
-        except Exception as e:
-            print(f"Failed to read cached grouped results {cached_group}: {e}. Recomputing...")
-    BASE_DIR = "agent_env"
-
-    # Regex pour extraire le pourcentage dans stdout
-    percent_pattern = re.compile(r"\[(\d+)%\]")
-
-    # Regex pour extraire model, nb_users, id depuis le nom du dossier
-    folder_pattern = re.compile(r"agent_env_user_(.+)_(\d+)_(\d+)_(\d+)")
-
-    rows = []
-
-    for folder in os.listdir(BASE_DIR):
-        folder_path = os.path.join(BASE_DIR, folder)
-
-        if not os.path.isdir(folder_path):
-            continue
-
-        match = folder_pattern.match(folder)
-        if not match:
-            continue
-
-        model, nb_users,agent_id, run_id = match.groups()
-        nb_users = int(nb_users)
-        agent_id = int(agent_id)
-        run_id = int(run_id)
-
-        # Chemin du fichier JSON
-        json_file = os.path.join(folder_path, REPO, "pytest_results.json")
-
-        # -------------------------------
-        #  CAS 1 : fichier présent → lire
-        #  CAS 2 : pas de fichier → percent = 0
-        # -------------------------------
-        if os.path.isfile(json_file):
-            with open(json_file, "r") as f:
-                data = json.load(f)
-
-            stdout = data.get("stdout", "")
-            return_code = data.get("rc", 1)
-            percent_match = percent_pattern.search(stdout)
-            if return_code != 0 or "FAILED" in stdout:
-                percent = 0
-            else:
-                percent = int(percent_match.group(1)) if percent_match else 0
-        else:
-            # Aucun fichier → échec complet
-            percent = 0
-
-        rows.append({
-            "model": model,
-            "nb_users": nb_users,
-            "agent_id": agent_id,
-            "run_id": run_id,
-            "percent": percent
-        })
-
-    # DataFrame complet
-    df = pd.DataFrame(rows)
-
-    # ----------------------------------------
-    #     REGROUPEMENT PAR MODEL / NB_USERS
-    # ----------------------------------------
-    df_grouped = (
-        df.groupby(["model"])["percent"]
-        .mean()
-        .reset_index()
-        .rename(columns={"percent": "mean_success_percent"})
-    )
     
-    print("\n=== Pourcentage moyen de réussite par modèle & nb_users ===")
+    print("\n=== Pourcentage moyen de réussite par modèle & nb_users (SWE-bench) ===")
     print(df_grouped)
-    df_grouped.to_csv("measure/data/pytest_grouped_results.csv", index=False)
-    df.to_csv("measure/data/pytest_raw_results.csv", index=False)
+    
+    os.makedirs("measure/data", exist_ok=True)
+    df_grouped.to_csv("measure/data/swebench_grouped_results.csv", index=False)
+    df.to_csv("measure/data/swebench_raw_results.csv", index=False)
 
     return df_grouped
-
 # --- Energy computation helpers (copied from perf_show) ---
 
 def compute_energy(power_profile):
