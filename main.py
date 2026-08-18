@@ -15,57 +15,66 @@ EVALUATION_SCRIPT = "measure/scripts/evaluation.py"
 os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + os.pathsep + "."
 
 
-def detecter_ports_ollama():
-    """Détecte les ports utilisés par Ollama."""
+def detecter_ports(engine: str):
+    """Détecte les ports utilisés par un moteur spécifique (ollama ou vllm)."""
     try:
-        cmd = "lsof -i -P -n | grep LISTEN | grep ollama"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # Trouver d'abord les PIDs du moteur
+        cmd_pids = f"pgrep -f {engine}"
+        res_pids = subprocess.run(cmd_pids, shell=True, capture_output=True, text=True)
+        pids = res_pids.stdout.strip().split()
+        
+        if not pids:
+            return []
+
         ports = set()
-        for line in result.stdout.splitlines():
-            match = re.search(r":(\d+)\s", line)
-            if match:
-                port = int(match.group(1))
-                ports.add(port)
+        # Chercher les ports d'écoute pour ces PIDs spécifiquement
+        for pid in pids:
+            cmd_lsof = f"lsof -i -P -n -a -p {pid} | grep LISTEN"
+            res_lsof = subprocess.run(cmd_lsof, shell=True, capture_output=True, text=True)
+            for line in res_lsof.stdout.splitlines():
+                match = re.search(r":(\d+)\s", line)
+                if match:
+                    ports.add(int(match.group(1)))
         return list(ports)
     except Exception as e:
-        print(f"Erreur lors de la détection des ports : {e}")
+        print(f"Erreur lors de la détection des ports pour {engine} : {e}")
         return []
 
 
-def tuer_tous_processus_ollama():
-    """Tue tous les processus liés à Ollama."""
+def tuer_tous_processus(engine: str):
+    """Tue tous les processus liés au moteur d'inférence (ollama ou vllm)."""
     try:
-        # Trouver tous les PIDs des processus "ollama"
-        cmd = "pgrep -f ollama"
+        # Trouver tous les PIDs des processus
+        cmd = f"pgrep -f {engine}"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         pids = result.stdout.strip().split()
+
+        if not pids:
+            return
 
         for pid in pids:
             try:
                 os.kill(int(pid), signal.SIGTERM)
-                print(f"Processus Ollama (PID: {pid}) arrêté.")
+                print(f"Processus {engine.capitalize()} (PID: {pid}) arrêté.")
             except Exception as e:
                 print(f"Erreur pour PID {pid}: {e}")
 
         # Attendre 2 secondes pour laisser le temps aux processus de s'arrêter
         time.sleep(2)
 
-        # Vérifier si des processus Ollama restent
-        cmd = "pgrep -f ollama"
+        # Vérifier si des processus restent
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         if result.stdout.strip():
-            print(
-                "Certains processus Ollama n'ont pas pu être arrêtés. Tentative avec SIGKILL..."
-            )
+            print(f"Certains processus {engine} n'ont pas pu être arrêtés. Tentative avec SIGKILL...")
             for pid in result.stdout.strip().split():
                 try:
                     os.kill(int(pid), signal.SIGKILL)
-                    print(f"Processus Ollama (PID: {pid}) forcé à s'arrêter.")
+                    print(f"Processus {engine.capitalize()} (PID: {pid}) forcé à s'arrêter.")
                 except Exception as e:
                     print(f"Erreur pour PID {pid}: {e}")
 
     except Exception as e:
-        print(f"Erreur lors de l'arrêt des processus Ollama: {e}")
+        print(f"Erreur lors de l'arrêt des processus {engine}: {e}")
 
 
 def main():
@@ -87,40 +96,45 @@ def main():
     # PHASE 1 : BENCHMARK (Inférence)
     # ==========================================
     if not args.skip_bench:
-        # Libérer les ports utilisés par Ollama avant la prochaine itération
-        ports_ollama = detecter_ports_ollama()
-        if ports_ollama:
-            print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
-            tuer_tous_processus_ollama()
-        else:
-            print("Aucun port Ollama détecté.")
-
-        MODELS = []
+        # Lecture de la config pour connaître le moteur et les modèles avant de commencer
         with open(args.config, "r") as f:
             config = json.load(f)
             MODELS = config["Models"]
+            inference_engine = str(config.get("Inference_Engine", "ollama")).lower()
+
+        # Libérer les ports utilisés par le moteur d'inférence avant la première itération
+        ports_engine = detecter_ports(inference_engine)
+        if ports_engine:
+            print(f"Libération des ports utilisés par {inference_engine} : {ports_engine}")
+            tuer_tous_processus(inference_engine)
+        else:
+            print(f"Aucun port {inference_engine} détecté avant le benchmark.")
 
         for model in MODELS:
             print(f"Running the Sim LLM benchmark with the model: {model}")
 
-
             os.environ["BENCH_MODEL"] = model
+            
+            # Cette fonction lit la config, setup le TOML, ET lance les scripts serveurs via run_front_bash_script
             set_env_from_gpu_config(args.config)
 
-            # 2. Une fois compilé, on met à jour la variable pour la suite du benchmark
-            custom_model = f"{model.replace(':', '-')}-swe"
-            os.environ["BENCH_MODEL"] = custom_model
+            # 2. On met à jour le nom du modèle pour le script multi_gpu_bench
+            # Uniquement Ollama a besoin de la concaténation "-swe" due au Modelfile
+            if inference_engine == "ollama":
+                custom_model = f"{model.replace(':', '-')}-swe"
+                os.environ["BENCH_MODEL"] = custom_model
+            else:
+                os.environ["BENCH_MODEL"] = model
 
             # ==========================================
             # PHASE 1.1 : GPU impact calculation
             # ==========================================
             main_impact()
 
-            # Afficher toutes les variables d'environnement
+            # Afficher toutes les variables d'environnement utiles au debug
             for key, value in os.environ.items():
                 if key.startswith("BENCH_GPU_"):
                     print(f"{key}: {value}")
-
 
             # Exécution du benchmark
             if not os.path.exists(BENCH_SCRIPT):
@@ -145,13 +159,11 @@ def main():
                 print("Backtrace :\n" + stderr_output)
                 sys.exit(1)
 
-            # Libérer les ports utilisés par Ollama avant la prochaine itération
-            ports_ollama = detecter_ports_ollama()
-            if ports_ollama:
-                print(f"Libération des ports utilisés par Ollama : {ports_ollama}")
-                tuer_tous_processus_ollama()
-            else:
-                print("Aucun port Ollama détecté.")
+            # Nettoyage des serveurs d'inférence démarrés par set_env_from_gpu_config
+            ports_engine = detecter_ports(inference_engine)
+            if ports_engine:
+                print(f"Arrêt des instances {inference_engine} de cette itération (Ports: {ports_engine})")
+                tuer_tous_processus(inference_engine)
     else:
         print("--- Mode Skip : Inférence ignorée ---")
 

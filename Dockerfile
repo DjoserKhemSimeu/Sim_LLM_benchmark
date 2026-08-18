@@ -34,9 +34,9 @@ WORKDIR /workspace
 # On copie d'abord UNIQUEMENT le requirements.txt. 
 # Ainsi, le cache Docker n'est pas invalidé si vous modifiez juste votre code (main.py)
 RUN pip3 install --upgrade pip
+RUN pip3 install --no-cache-dir vllm mini-swe-agent
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
-RUN pip3 install mini-swe-agent
 
 # Désactivation des traces crewai (maintenant que Python/crewai est installé)
 RUN crewai traces disable

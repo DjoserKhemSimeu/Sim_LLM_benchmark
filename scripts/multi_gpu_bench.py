@@ -38,7 +38,9 @@ Max = 1  # Nb max de requêtes par utilisateur
 N=int(os.environ.get("BENCH_ITERATION", 10))  # Nombre total d'itérations
 MODEL = os.environ.get("BENCH_MODEL", "mistral:7b")
 NUM_GPUS=int(os.environ.get("BENCH_NUM_GPU", 1))
-CHECKPOINT_FILE = f"measure/data/checkpoint_{MODEL}.json"
+SAFE_MODEL = MODEL.replace('/', '_').replace(':', '-')
+CHECKPOINT_FILE = f"measure/data/checkpoint_{SAFE_MODEL}.json"
+ENGINE = os.environ.get("BENCH_INFERENCE_ENGINE", "ollama").lower()
 print_lock = threading.Lock()
 def save_intermediate_raw_latencies(current_results):
     """Sauvegarde les latences brutes accumulées jusqu'à présent dans le CSV."""
@@ -106,15 +108,28 @@ def save_checkpoint(nb_users, iteration, results, delta_t_data):
         }, f)
     log_message(f"[Checkpoint] Sauvegarde réussie : Modèle={MODEL}, Users={nb_users}, Iteration={iteration}")
 def warmup_gpu(gpu_id, model):
-    print(f"Préchauffage du modèle Ollama sur le GPU {gpu_id}...")
+    print(f"Préchauffage du modèle {ENGINE} sur le GPU {gpu_id}...")
+    port = 53100 + int(gpu_id)
     try:
-        url = f"http://localhost:{53100 + int(gpu_id)}/api/generate"
-        response = requests.post(url, json={
-            "model": model,
-            "prompt": "warmup: Are you ready to run (yes/no)?",
-            "stream": False
-        }, timeout=300) # Ajout d'un timeout (5 min) car le chargement VRAM peut être long
-        response.raise_for_status() # Vérifie que la requête a réussi (code 200)
+        if ENGINE == "vllm":
+            # API OpenAI-compatible pour vLLM
+            url = f"http://localhost:{port}/v1/completions"
+            payload = {
+                "model": model,
+                "prompt": "warmup: Are you ready to run (yes/no)?",
+                "max_tokens": 10
+            }
+        else: 
+            # API Native pour Ollama
+            url = f"http://localhost:{port}/api/generate"
+            payload = {
+                "model": model,
+                "prompt": "warmup: Are you ready to run (yes/no)?",
+                "stream": False
+            }
+            
+        response = requests.post(url, json=payload, timeout=300)
+        response.raise_for_status() 
         print(f"Modèle chargé en VRAM sur le GPU {gpu_id} !")
         return gpu_id, True
     except Exception as e:
@@ -144,8 +159,7 @@ async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users,n):
     delta_ts = []
     start = time.time()
     i = 0
-    clients = [AsyncClient(host=f"http://{h}") for h in hosts]
-    nb_hosts = len(clients)
+    nb_hosts = len(hosts)
 
    
     delta_t = np.random.exponential(1 / lamb)
@@ -155,7 +169,6 @@ async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users,n):
 
 
     host_idx = user_id % nb_hosts
-    client = clients[host_idx]
 
     delta_t_collector[user_id] = delta_ts
 
@@ -163,10 +176,10 @@ async def simulate_user(user_id, model, hosts, delta_t_collector,nb_users,n):
         try:
             logs_dir = os.path.join('logs', 'issue_solver')
             os.makedirs(logs_dir, exist_ok=True)
-            out_path = os.path.join(logs_dir, f'user_{model}_{nb_users}_{user_id}_{n}.stdout.log')
-            err_path = os.path.join(logs_dir, f'user_{model}_{nb_users}_{user_id}_{n}.stderr.log')
-            agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{nb_users}_{user_id}_{n}')
-
+            safe_m = model.replace('/', '_').replace(':', '-')
+            out_path = os.path.join(logs_dir, f'user_{safe_m}_{nb_users}_{user_id}_{n}.stdout.log')
+            err_path = os.path.join(logs_dir, f'user_{safe_m}_{nb_users}_{user_id}_{n}.stderr.log')
+            agent_env_path = os.path.join('agent_env', f'agent_env_user_{safe_m}_{nb_users}_{user_id}_{n}')
             os.makedirs(agent_env_path, exist_ok=True)
             cmd = [ sys.executable, ISSUE_SOLVER_PATH, '--user-id', str(user_id), '--host', f'http://{hosts[host_idx]}','--n_users', str(nb_users), '--iter', str(n) ]
             if SYNC_ISSUE_SOLVER:

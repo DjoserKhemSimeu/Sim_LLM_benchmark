@@ -46,10 +46,11 @@ ISSUES = json.loads(os.environ.get("BENCH_ISSUES", "[]"))
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = ABS_ROOT / "logs" / "parsed"
-LOG_FILE = LOG_DIR / f"results_{MODEL.replace(':', '-')}.jsonl"
+SAFE_MODEL = MODEL.replace(':', '-').replace('/', '_')
+LOG_FILE = LOG_DIR / f"results_{SAFE_MODEL}.jsonl"
 log_lock = threading.Lock()
 
-agent_env_path = os.path.join('agent_env', f'agent_env_user_{MODEL}_{NB_USER}_{ID}_{ITER}')
+agent_env_path = os.path.join('agent_env', f'agent_env_user_{SAFE_MODEL}_{NB_USER}_{ID}_{ITER}')
 os.makedirs(agent_env_path, exist_ok=True)
 os.chdir(agent_env_path)
 
@@ -72,9 +73,8 @@ with open(swe_config_yaml, 'r', encoding='utf-8') as f:
 if 'model' in config:
     # On utilise le format openai/ pour que LiteLLM/LangChain comprenne
     config['model']['model_name'] = f"openai/{MODEL}"
-    # On ajoute /v1 à l'URL de base pour la compatibilité avec l'API OpenAI attendue
     config['model']['api_base'] = f"{HOST}/v1"
-    config['model']['api_key'] = "sk-dummy-key-pour-ollama"
+    config['model']['api_key'] = "sk-dummy-key"
 
 # --- INJECTION DU LABEL DOCKER POUR LE NETTOYAGE ISOLE ---
 if 'environment' not in config:
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         "-c", f"{swe_config_yaml}"
     ]
     env = os.environ.copy()
-    env["OPENAI_API_KEY"] = "sk-dummy-key-pour-ollama"
+    env["OPENAI_API_KEY"] = "sk-dummy-key"
     env["OPENAI_API_BASE"] = f"{HOST}/v1"
     env["OPENAI_BASE_URL"] = f"{HOST}/v1"
     print(f"[{job_id}] Exécution de la commande : {' '.join(cmd)}")

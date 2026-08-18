@@ -22,10 +22,12 @@ fi
 echo "Lancement du conteneur avec accès aux GPUs et SSH..."
 mkdir -p /tmp/ollama_host_storage
 mkdir -p "$(pwd)/save_data"
-docker run --gpus=all -it --rm \
+mkdir -p "$(pwd)/hf_cache"
+docker run --device nvidia.com/gpu=all -it --rm \
   --shm-size=16gb \
   --net=host \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$(pwd)":$CONTAINER_WORKDIR \
   -v /tmp/ollama_host_storage:/tmp/ollama \
+  -v "$(pwd)/hf_cache:/root/.cache/huggingface" \
   $IMAGE_NAME

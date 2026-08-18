@@ -10,7 +10,8 @@
   ],
   "Nb_users":[10,25,50,100],
   "Iteration":10,
-  "Models":["qwen3.6:35b"],
+  "Models":["Qwen/Qwen3.8-27B"],
+  "Inference_Engine":"vllm",
   "gpus": {
     "0": {
       "nom": "RTX 3080",
