@@ -26,7 +26,7 @@ fi
 # Create log directory if it doesn't exist
 mkdir -p "$LOG_DIR"
 
-# Pre-download the model
+# Pre-download the modelss
 echo "Checking/pre-downloading model $MODEL via Hugging Face..."
 hf download "$MODEL"
 
@@ -50,11 +50,35 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   export CUDA_VISIBLE_DEVICES="$i"
 
   echo "Démarrage initié pour le GPU $i (Port ${PORT})..."
+  LOWER_MODEL="${MODEL,,}"
 
-  # Lancement en arrière-plan
+  if [[ "$LOWER_MODEL" == *"mistral"* ]] || [[ "$LOWER_MODEL" == *"mixtral"* ]]; then
+    PARSER="mistral"
+  elif [[ "$LOWER_MODEL" == *"llama-3"* ]] || [[ "$LOWER_MODEL" == *"llama3"* ]]; then
+    PARSER="llama3_json"
+  elif [[ "$LOWER_MODEL" == *"qwen"* ]]; then
+    PARSER="hermes"
+  elif [[ "$LOWER_MODEL" == *"deepseek"* ]]; then
+    PARSER="deepseek_v3"
+  elif [[ "$LOWER_MODEL" == *"granite"* ]]; then
+    PARSER="granite"
+  elif [[ "$LOWER_MODEL" == *"internlm"* ]]; then
+    PARSER="internlm"
+  elif [[ "$LOWER_MODEL" == *"phi-4-mini"* ]] || [[ "$LOWER_MODEL" == *"phi4-mini"* ]]; then
+    PARSER="phi4_mini_json"
+  else
+    # Défaut raisonnable : beaucoup de fine-tunes génériques
+    # suivent un format compatible ChatML/Hermes
+    PARSER="hermes"
+  fi
+
+  echo "Modèle: $MODEL -> Parser sélectionné: $PARSER"
+
   nohup vllm serve "$MODEL" \
     --host "$HOST" \
     --port "$PORT" \
+    --enable-auto-tool-choice \
+    --tool-call-parser "$PARSER" \
     --gpu-memory-utilization 0.95 \
     > "$LOG_FILE" 2>&1 &
     
@@ -102,7 +126,7 @@ while [ "$ALL_READY" = false ]; do
   done
 
   # Si tout n'est pas prêt, on attend avant de revérifier
-  if [ "$ALL_READY" = false ]; do
+  if [ "$ALL_READY" = false ]; then
     sleep 3
   fi
 done

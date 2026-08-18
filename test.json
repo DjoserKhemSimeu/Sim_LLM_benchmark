@@ -10,7 +10,7 @@
   ],
   "Nb_users":[10,25,50,100],
   "Iteration":10,
-  "Models":["Qwen/Qwen3.8-27B"],
+  "Models":["Qwen/Qwen2.5-32B-Instruct-AWQ"],
   "Inference_Engine":"vllm",
   "gpus": {
     "0": {

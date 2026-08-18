@@ -29,5 +29,4 @@ docker run --gpus all -it --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$(pwd)":$CONTAINER_WORKDIR \
   -v /tmp/ollama_host_storage:/tmp/ollama \
-  -v "$(pwd)/hf_cache:/root/.cache/huggingface" \
   $IMAGE_NAME

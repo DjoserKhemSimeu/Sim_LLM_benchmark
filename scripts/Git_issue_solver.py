@@ -41,6 +41,7 @@ HOST = args.host
 ITER = args.iter
 NB_USER = args.n_users
 MODEL = os.environ.get("BENCH_MODEL", "gemma3:4b")
+ENGINE = os.environ.get("BENCH_INFERENCE_ENGINE", "ollama").lower()
 ISSUES = json.loads(os.environ.get("BENCH_ISSUES", "[]"))
 
 # --- GESTION DES CHEMINS ABSOLUS ---
@@ -72,7 +73,10 @@ with open(swe_config_yaml, 'r', encoding='utf-8') as f:
 # 4. Modification des valeurs avec vos variables dynamiques
 if 'model' in config:
     # On utilise le format openai/ pour que LiteLLM/LangChain comprenne
-    config['model']['model_name'] = f"openai/{MODEL}"
+    if ENGINE == "vllm":
+        config['model']['model_name'] = f"hosted_vllm/{MODEL}"
+    else:
+        config['model']['model_name'] = f"openai/{MODEL}"
     config['model']['api_base'] = f"{HOST}/v1"
     config['model']['api_key'] = "sk-dummy-key"
 

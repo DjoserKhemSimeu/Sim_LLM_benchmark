@@ -280,7 +280,7 @@ async def benchmark(config_path, users_list):
             save_checkpoint(n_users, i, results, delta_t_data)
             save_intermediate_raw_latencies(results)
 
-        log_message(f"Completed {n_users} users, total requests: {len(all_times)}")
+        log_message(f"Completed {n_users} users")
         await asyncio.sleep(5)
 
     return results, delta_t_data
