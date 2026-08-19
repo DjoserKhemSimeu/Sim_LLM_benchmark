@@ -62,7 +62,7 @@ def save_intermediate_raw_latencies(current_results):
 
     df_raw = pd.DataFrame(raw_data)
     os.makedirs("./measure/data", exist_ok=True)
-    raw_csv_path = f"./measure/data/raw_latencies_{MODEL}.csv"
+    raw_csv_path = f"./measure/data/raw_latencies_{SAFE_MODEL}.csv"
     df_raw.to_csv(raw_csv_path, index=False)
     log_message(f"[Sauvegarde intermédiaire] Données brutes mises à jour dans {raw_csv_path}")
 
@@ -341,7 +341,7 @@ def plot_latency_and_efficiency(results):
     os.makedirs("./measure/data", exist_ok=True)
 
     # Enregistrement du fichier CSV
-    csv_path = f"./measure/data/latency_efficiency_data_{MODEL}.csv"
+    csv_path = f"./measure/data/latency_efficiency_data_{SAFE_MODEL}.csv"
     df.to_csv(csv_path, index=False)
     print(f"Données enregistrées sous {csv_path}")
     raw_data = []
@@ -381,8 +381,8 @@ def plot_latency_and_efficiency(results):
     ax2.legend()
 
     plt.tight_layout()
-    plt.savefig(f"./measure/data/latency_efficiency_{MODEL}.png")
-    print(f"Graphiques enregistrés sous ./measure/data/latency_efficiency_{MODEL}.png")
+    plt.savefig(f"./measure/data/latency_efficiency_{SAFE_MODEL}.png")
+    print(f"Graphiques enregistrés sous ./measure/data/latency_efficiency_{SAFE_MODEL}.png")
 
 
 # --- MAIN ---
