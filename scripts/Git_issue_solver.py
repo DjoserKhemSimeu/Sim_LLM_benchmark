@@ -115,6 +115,9 @@ if __name__ == "__main__":
     env["OPENAI_API_KEY"] = "sk-dummy-key"
     env["OPENAI_API_BASE"] = f"{HOST}/v1"
     env["OPENAI_BASE_URL"] = f"{HOST}/v1"
+
+    env["LITELLM_LOG"] = "DEBUG"
+    env["LITELLM_LOCAL_LOGGING"] = "True"
     print(f"[{job_id}] Exécution de la commande : {' '.join(cmd)}")
     print("-" * 40)
     

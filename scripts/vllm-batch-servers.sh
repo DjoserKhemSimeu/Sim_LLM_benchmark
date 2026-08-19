@@ -52,7 +52,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   echo "Démarrage initié pour le GPU $i (Port ${PORT})..."
   LOWER_MODEL="${MODEL,,}"
 
-  if [[ "$LOWER_MODEL" == *"mistral"* ]] || [[ "$LOWER_MODEL" == *"mixtral"* ]]; then
+  if [[ "$LOWER_MODEL" == *"mistral"* ]] || [[ "$LOWER_MODEL" == *"mixtral"* ]] || [[ "$LOWER_MODEL" == *"ministral"* ]]; then
     PARSER="mistral"
   elif [[ "$LOWER_MODEL" == *"llama-3"* ]] || [[ "$LOWER_MODEL" == *"llama3"* ]]; then
     PARSER="llama3_json"
