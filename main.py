@@ -95,7 +95,12 @@ def main():
     # ==========================================
     # PHASE 1 : BENCHMARK (Inférence)
     # ==========================================
-    if not args.skip_bench:
+
+    if args.skip_bench:
+        set_env_from_gpu_config(args.config)
+        main_impact()
+        print("--- Mode Skip : Inférence ignorée ---")
+    else:
         # Lecture de la config pour connaître le moteur et les modèles avant de commencer
         with open(args.config, "r") as f:
             config = json.load(f)
@@ -164,8 +169,6 @@ def main():
             if ports_engine:
                 print(f"Arrêt des instances {inference_engine} de cette itération (Ports: {ports_engine})")
                 tuer_tous_processus(inference_engine)
-    else:
-        print("--- Mode Skip : Inférence ignorée ---")
 
 
     # ==========================================
@@ -205,6 +208,7 @@ def main():
             print("Backtrace :\n" + stderr_output)
             sys.exit(1)
     else:
+
         print("--- Mode Skip : Évaluation ignorée ---")
 
 

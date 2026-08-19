@@ -212,12 +212,13 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
     power_profiles = {gpu_id: {model: {} for model in models} for gpu_id in gpus}
     for gpu_id in gpus:
         for model in models:
+            safe_model = model.replace('/', '_').replace(':', '-')
             for nb_user in user_counts:
                 # Try to gather ITERATION files named with an iteration suffix.
                 series_list = []
                 found_any = False
                 for it in range(ITERATION):
-                    file_path_iter = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}_{it}.csv"
+                    file_path_iter = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{safe_model}_{it}.csv"
                     if os.path.isfile(file_path_iter):
                         try:
                             df = pd.read_csv(file_path_iter)
@@ -239,7 +240,7 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
 
                 # Fallback: if no iter files found, try the old single-file name
                 if not found_any:
-                    file_path = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{model}.csv"
+                    file_path = f"save_data/consommation_energie_gpu_{gpu_id}_{nb_user}_{safe_model}.csv"
                     if os.path.isfile(file_path):
                         try:
                             df = pd.read_csv(file_path)
@@ -302,12 +303,13 @@ def plot_power_profiles(power_profiles, gpus, user_counts=[1, 10, 100], models=N
                     )
             ax.set_xlabel("Time (s)")
             ax.set_ylabel("Power (W)")
-            ax.set_title(f"Power consumption profiles - {model} ({nb_user} users)")
+            safe_model = model.replace('/', '_').replace(':', '-')
+            ax.set_title(f"Power consumption profiles - {safe_model} ({nb_user} users)")
             ax.legend()
             ax.grid(True)
             os.makedirs("images/power_profiles", exist_ok=True)
             plt.savefig(
-                f"images/power_profiles/power_profile_{model}_{nb_user}_users.png",
+                f"images/power_profiles/power_profile_{safe_model}_{nb_user}_users.png",
                 bbox_inches="tight",
             )
             plt.close()
@@ -1104,9 +1106,9 @@ def plot_tool_sequence_sankey_plotly(
             title_text=f"Tool-call Sankey diagram (real order)<br>Model: {model}",
             font_size=11
         )
-
-        out_png = os.path.join(outdir, f"tool_sankey_{model}.png")
-        out_html = os.path.join(outdir, f"tool_sankey_{model}.html")
+        safe_model = model.replace('/', '_').replace(':', '-')
+        out_png = os.path.join(outdir, f"tool_sankey_{safe_model}.png")
+        out_html = os.path.join(outdir, f"tool_sankey_{safe_model}.html")
 
         fig.write_image(out_png, scale=2)
         fig.write_html(out_html)

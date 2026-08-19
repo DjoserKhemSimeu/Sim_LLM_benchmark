@@ -256,7 +256,7 @@ async def benchmark(config_path, users_list):
                 continue
 
             log_message(f"\n=== Benchmark avec {n_users} utilisateurs for iteration {i} ===")
-            run_back_bash_script("measure/scripts/script_start_tx.sh", str(n_users), MODEL, str(i))
+            run_back_bash_script("measure/scripts/script_start_tx.sh", str(n_users), SAFE_MODEL, str(i))
 
             tasks = []
             delta_t_collector = {}
@@ -351,7 +351,7 @@ def plot_latency_and_efficiency(results):
 
     df_raw = pd.DataFrame(raw_data)
     print(df_raw)
-    raw_csv_path = f"./measure/data/raw_latencies_{MODEL}.csv"
+    raw_csv_path = f"./measure/data/raw_latencies_{SAFE_MODEL}.csv"
     df_raw.to_csv(raw_csv_path, index=False)
     print(f"Données brutes enregistrées sous {raw_csv_path}")
     # --- Création des graphiques ---
