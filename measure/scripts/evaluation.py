@@ -19,6 +19,7 @@ import importlib.util
 seven_years = 61320 * 3600  # seconds in 7 years (~61320 hours?) keep same as perf_show
 three_years = 26298 * 3600
 ITERATION = int(os.environ.get("BENCH_ITERATION", 10))
+ENGINE = os.environ.get("BENCH_INFERENCE_ENGINE", "ollama").lower()
 REPO = os.environ.get("BENCH_REPO_NAME", "dummy_agent")   
 # --- Helpers to load inputs ---
 
@@ -212,7 +213,10 @@ def load_power_profiles(gpus, user_counts=[1, 10, 100], models=None):
     power_profiles = {gpu_id: {model: {} for model in models} for gpu_id in gpus}
     for gpu_id in gpus:
         for model in models:
-            safe_model = model.replace('/', '_').replace(':', '-')
+            if ENGINE == "ollama":
+                safe_model = model.replace('/', '_').replace(':', '-') + "-swe"
+            else:
+                safe_model = model.replace('/', '_').replace(':', '-')
             for nb_user in user_counts:
                 # Try to gather ITERATION files named with an iteration suffix.
                 series_list = []
@@ -854,8 +858,12 @@ def load_raw_latencies(models, user_counts, data_dir="measure/data"):
     """
     raw = {}
     for model in models:
+        if ENGINE == "ollama":
+            safe_model = model.replace('/', '_').replace(':', '-') + "-swe"
+        else:
+            safe_model = model.replace('/', '_').replace(':', '-')
         # try direct filename, fall back to replacing ':' with '_'
-        fname = os.path.join(data_dir, f"raw_latencies_{model}.csv")
+        fname = os.path.join(data_dir, f"raw_latencies_{safe_model}.csv")
         if not os.path.exists(fname):
             alt = model.replace(":", "_")
             fname2 = os.path.join(data_dir, f"raw_latencies_{alt}.csv")

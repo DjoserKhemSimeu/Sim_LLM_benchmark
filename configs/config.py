@@ -73,7 +73,6 @@ def set_env_from_gpu_config(config_path: str) -> None:
         modelfile_content = f"""FROM {base_model}
 PARAMETER num_gpu 99
 PARAMETER num_thread 4
-PARAMETER num_ctx 32768
 """
         with open("Modelfile", "w", encoding="utf-8") as f:
             f.write(modelfile_content)
