@@ -38,9 +38,6 @@ RUN pip3 install --no-cache-dir vllm mini-swe-agent
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Désactivation des traces crewai (maintenant que Python/crewai est installé)
-RUN crewai traces disable
-
 # 6. Copie du reste du code source
 COPY . .
 
