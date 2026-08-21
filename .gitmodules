@@ -1,0 +1,3 @@
+[submodule "patches/vllm-gguf-plugin"]
+	path = patches/vllm-gguf-plugin
+	url = https://github.com/DjoserKhemSimeu/vllm-gguf-plugin.git
