@@ -72,7 +72,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     PARSER="hermes"
   fi
 
-  echo "Modèle: $MODEL -> Parser sélectionné: $PARSER"
+  echo "Démarrage GPU $i (Port ${PORT}) | Modèle: $MODEL | Parser: $PARSER"
 
   nohup vllm serve "$MODEL" \
     --host "$HOST" \
@@ -80,6 +80,9 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     --enable-auto-tool-choice \
     --tool-call-parser "$PARSER" \
     --gpu-memory-utilization 0.95 \
+    --max-model-len 16384 \
+    --enforce-eager \
+    --enable-chunked-prefill \
     > "$LOG_FILE" 2>&1 &
     
   # Enregistrement des données dans les tableaux
