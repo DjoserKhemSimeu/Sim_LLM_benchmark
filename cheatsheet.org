@@ -57,3 +57,11 @@ sudo systemctl restart docker
 
 *** CDI error : 
  replace ``` --device nvidia.com/gpu=all ``` by ``` --gpus all ```
+
+ ** vLLM setup
+
+ for vLLM you must clone :
+ #+begin_example
+ git clone --recurse-submodules -b dsi/vllm_integration https://github.com/DjoserKhemSimeu/Sim_LLM_benchmark.git
+ #+end_example
+ 
