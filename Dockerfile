@@ -31,13 +31,16 @@ RUN mkdir -p /root/.ssh && \
 WORKDIR /workspace
 
 # 5. Installation des dépendances Python
-# On copie d'abord UNIQUEMENT le requirements.txt. 
-# Ainsi, le cache Docker n'est pas invalidé si vous modifiez juste votre code (main.py)
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir vllm mini-swe-agent
+RUN pip3 install --no-cache-dir vllm vllm-gguf-plugin mini-swe-agent
+
+# PATCH
+COPY patches/vllm-gguf-plugin /tmp/vllm-gguf-plugin
+RUN cp -r /tmp/vllm-gguf-plugin/vllm_gguf_plugin/* /opt/venv/lib/python3.12/site-packages/vllm_gguf_plugin/ && \
+    rm -rf /tmp/vllm-gguf-plugin
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
-
+ 
 # 6. Copie du reste du code source
 COPY . .
 

@@ -32,7 +32,9 @@ ISSUES = json.loads(os.environ.get("BENCH_ISSUES", "[]"))
 # --- GESTION DES CHEMINS ABSOLUS ---
 ABS_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = ABS_ROOT / "logs" / "parsed"
-SAFE_MODEL = MODEL.replace(':', '-').replace('/', '_')
+clean_model = MODEL.split("::")[0] if "::" in MODEL else MODEL
+SAFE_MODEL = clean_model.replace(':', '-').replace('/', '_')
+
 LOG_FILE = LOG_DIR / f"results_{SAFE_MODEL}.jsonl"
 log_lock = threading.Lock()
 
@@ -58,10 +60,11 @@ with open(swe_config_yaml, 'r', encoding='utf-8') as f:
 # 4. Modification des valeurs avec vos variables dynamiques
 if 'model' in config:
     # On utilise le format openai/ pour que LiteLLM/LangChain comprenne
+    clean_model = MODEL.split("::")[0] if "::" in MODEL else MODEL
     if ENGINE == "vllm":
-        config['model']['model_name'] = f"hosted_vllm/{MODEL}"
+        config['model']['model_name'] = f"hosted_vllm/{clean_model}"
     else:
-        config['model']['model_name'] = f"openai/{MODEL}"
+        config['model']['model_name'] = f"openai/{clean_model}"
     config['model']['api_base'] = f"{HOST}/v1"
     config['model']['api_key'] = "sk-dummy-key"
 
@@ -88,11 +91,12 @@ if __name__ == "__main__":
     print(f"[{job_id}] Starting User {ID} Benchmark...")
     filter_string = "|".join(ISSUES)
     # 1. Définir la commande sous forme de liste (recommandé pour subprocess)
+    clean_model = MODEL.split("::")[0] if "::" in MODEL else MODEL
     cmd = [
         "mini-extra", "swebench",
         "--subset", "lite",
         "--split", "test",
-        "-m", f"openai/{MODEL}",  # Utilise dynamiquement le modèle configuré
+        "-m", f"openai/{clean_model}",  # Utilise dynamiquement le modèle configuré
         "--filter", filter_string,
         "-c", f"{swe_config_yaml}"
     ]
