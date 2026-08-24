@@ -43,8 +43,10 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     PARSER="mistral"
   elif [[ "$LOWER_MODEL" == *"llama-3"* ]] || [[ "$LOWER_MODEL" == *"llama3"* ]]; then
     PARSER="llama3_json"
-  elif [[ "$LOWER_MODEL" == *"qwen"* ]]; then
+  elif [[ "$LOWER_MODEL" == *"qwen2"* ]]; then
     PARSER="hermes"
+  elif [[ "$LOWER_MODEL" == *"qwen3"* ]]; then
+    PARSER="qwen3_coder"
   else
     PARSER="hermes"
   fi
