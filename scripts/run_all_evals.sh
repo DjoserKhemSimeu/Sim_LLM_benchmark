@@ -29,7 +29,7 @@ for AGENT_DIR in "$BASE_DIR"/agent_env_user_*; do
                 
                 # 1. On lance SWE-bench avec le SAFE_RUN_ID
                 python -m swebench.harness.run_evaluation \
-                    --dataset_name princeton-nlp/SWE-bench_Lite \
+                    --dataset_name SWE-bench/SWE-bench_Lite \
                     --split test \
                     --predictions_path "$AGENT_DIR/preds.json" \
                     --run_id "$SAFE_RUN_ID" \
