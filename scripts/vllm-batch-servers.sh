@@ -37,7 +37,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   LOG_FILE="${LOG_DIR}/${PORT}_${SAFE_MODEL_NAME}.log"
 
   export CUDA_VISIBLE_DEVICES="$i"
-
+  REASONING_PARSER_ARG=""
   LOWER_MODEL="${MODEL,,}"
   if [[ "$LOWER_MODEL" == *"mistral"* ]] || [[ "$LOWER_MODEL" == *"mixtral"* ]] || [[ "$LOWER_MODEL" == *"ministral"* ]]; then
     PARSER="mistral"
@@ -47,6 +47,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     PARSER="hermes"
   elif [[ "$LOWER_MODEL" == *"qwen3"* ]]; then
     PARSER="qwen3_coder"
+    REASONING_PARSER_ARG="--reasoning-parser qwen3"
   else
     PARSER="hermes"
   fi
@@ -62,6 +63,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   # Lancement avec le format repo_id:quant_type natif
   nohup vllm serve "$MODEL" \
     $TOKENIZER_ARG \
+    $REASONING_PARSER_ARG \
     --host "$HOST" \
     --port "$PORT" \
     --enable-auto-tool-choice \
