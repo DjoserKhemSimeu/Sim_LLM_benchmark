@@ -69,7 +69,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     --enable-auto-tool-choice \
     --tool-call-parser "$PARSER" \
     --gpu-memory-utilization 0.95 \
-    --max-model-len 16384 \
+    --max-model-len 65536 \
     --enforce-eager \
     --enable-chunked-prefill \
     > "$LOG_FILE" 2>&1 &
