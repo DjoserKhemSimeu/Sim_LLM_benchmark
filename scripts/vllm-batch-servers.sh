@@ -71,6 +71,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     --gpu-memory-utilization 0.95 \
     --max-model-len 65536 \
     --enforce-eager \
+    --max-num-seqs 128 \
     --enable-chunked-prefill \
     > "$LOG_FILE" 2>&1 &
     
