@@ -18,7 +18,7 @@
   ],
   "Nb_users":[1,20,40,60,80,100],
   "Iteration":10,
-  "Models":["unsloth/Qwen3.8-27B-GGUF:UD-Q8_K_XL::Qwen/Qwen3.8-27B"],
+  "Models":["unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL::Qwen/Qwen3.6-35B-A3B"],
   "Inference_Engine":"vllm",
   "gpus": {
     "0": {
