@@ -19,12 +19,15 @@ def set_env_from_gpu_config(config_path: str) -> None:
         
     inference_engine = str(config.get("Inference_Engine", "ollama")).lower()
 
+    enable_thinking = str(config.get("Enable_Thinking", False)).lower()
+
     os.environ["BENCH_TEGRA"] = str(tegra)
     os.environ["BENCH_NUM_GPU"] = str(num_gpus)
     os.environ["BENCH_PUE"] = str(config["PUE"])
     os.environ["BENCH_USERS"] = json.dumps(config["Nb_users"])
     os.environ["BENCH_ITERATION"] = str(config.get("Iteration", 10))
     os.environ["BENCH_INFERENCE_ENGINE"] = inference_engine
+    os.environ["BENCH_ENABLE_THINKING"] = enable_thinking
     os.environ["BENCH_MODELS"] = json.dumps(config["Models"])
     os.environ["BENCH_ISSUES"] = json.dumps(config["SWEbench_issues"])
 
@@ -39,8 +42,9 @@ def set_env_from_gpu_config(config_path: str) -> None:
         base_model = base_model_raw
         tokenizer_repo = ""
 
+    default_temp = 0.7 if ("qwen3" in base_model.lower() and enable_thinking in ("false", "0")) else 0.0
     toml_config = {
-        "temperature": 0.0,
+        "temperature": default_temp,
         "system_message": "You are an assistant",
         "ollama_instances": {}, 
     }

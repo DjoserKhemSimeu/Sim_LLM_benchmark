@@ -38,7 +38,12 @@ for ((i = 0; i < NUM_GPUS; i++)); do
 
   export CUDA_VISIBLE_DEVICES="$i"
   REASONING_PARSER_ARG=""
+  CHAT_TEMPLATE_ARG=""
   LOWER_MODEL="${MODEL,,}"
+  ENABLE_THINKING="${BENCH_ENABLE_THINKING:-false}"
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  TEMPLATE_PATH="${SCRIPT_DIR}/../configs/qwen3_nonthinking.jinja"
+
   if [[ "$LOWER_MODEL" == *"mistral"* ]] || [[ "$LOWER_MODEL" == *"mixtral"* ]] || [[ "$LOWER_MODEL" == *"ministral"* ]]; then
     PARSER="mistral"
   elif [[ "$LOWER_MODEL" == *"llama-3"* ]] || [[ "$LOWER_MODEL" == *"llama3"* ]]; then
@@ -47,7 +52,13 @@ for ((i = 0; i < NUM_GPUS; i++)); do
     PARSER="hermes"
   elif [[ "$LOWER_MODEL" == *"qwen3"* ]]; then
     PARSER="qwen3_coder"
-    REASONING_PARSER_ARG="--reasoning-parser qwen3"
+    if [[ "$ENABLE_THINKING" == "true" ]] || [[ "$ENABLE_THINKING" == "1" ]]; then
+      REASONING_PARSER_ARG="--reasoning-parser qwen3"
+    else
+      if [ -f "$TEMPLATE_PATH" ]; then
+        CHAT_TEMPLATE_ARG="--chat-template $TEMPLATE_PATH"
+      fi
+    fi
   else
     PARSER="hermes"
   fi
@@ -64,6 +75,7 @@ for ((i = 0; i < NUM_GPUS; i++)); do
   nohup vllm serve "$MODEL" \
     $TOKENIZER_ARG \
     $REASONING_PARSER_ARG \
+    $CHAT_TEMPLATE_ARG \
     --host "$HOST" \
     --port "$PORT" \
     --enable-auto-tool-choice \

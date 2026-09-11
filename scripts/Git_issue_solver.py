@@ -57,6 +57,9 @@ shutil.copy(source_yaml, swe_config_yaml)
 with open(swe_config_yaml, 'r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
+# --- GESTION DU MODE THINKING ---
+ENABLE_THINKING = os.environ.get("BENCH_ENABLE_THINKING", "false").lower() in ("true", "1", "yes")
+
 # 4. Modification des valeurs avec vos variables dynamiques
 if 'model' in config:
     # On utilise le format openai/ pour que LiteLLM/LangChain comprenne
@@ -67,6 +70,21 @@ if 'model' in config:
         config['model']['model_name'] = f"openai/{clean_model}"
     config['model']['api_base'] = f"{HOST}/v1"
     config['model']['api_key'] = "sk-dummy-key"
+
+    if 'model_kwargs' not in config['model']:
+        config['model']['model_kwargs'] = {}
+
+    if "qwen3" in clean_model.lower() and not ENABLE_THINKING:
+        config['model']['model_kwargs'].update({
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 20,
+            "presence_penalty": 1.5,
+            "repetition_penalty": 1.0,
+            "extra_body": {
+                "chat_template_kwargs": {"enable_thinking": False}
+            }
+        })
 
 # --- INJECTION DU LABEL DOCKER POUR LE NETTOYAGE ISOLE ---
 if 'environment' not in config:
